@@ -1,0 +1,73 @@
+{
+  "version": "1.0",
+  "created": "2026-08-12",
+  "tasks": [
+    {
+      "id": "TASK-20260812-001",
+      "title": "需求分析：三支一扶学习导师重构",
+      "description": "分析现有单Agent系统的不足，基于多Agent架构重新设计学习导师系统的功能需求、模块划分、交互流程。",
+      "assigned_to": "PM-001",
+      "priority": "P0-最高",
+      "depends_on": [],
+      "status": "已完成",
+      "delegation_id": "deleg_b13f1972",
+      "assigned_at": "2026-08-12 21:35",
+      "completed_at": "2026-08-12 21:39",
+      "created_at": "2026-08-12 10:00",
+      "acceptance_criteria": [
+        "产出需求分析报告（≥10KB Markdown）",
+        "产出任务分解表（≥20任务，含依赖关系）",
+        "明确各Agent职责边界",
+        "产出工作日志"
+      ],
+      "output": {
+        "需求分析报告": "outputs/需求分析报告.md (18,845 bytes)",
+        "任务分解表": "outputs/任务分解表.json (27,564 bytes, 26任务51依赖边)",
+        "工作日志": "work-logs/active/PM-001-TASK-20260812-001.md (7,416 bytes)"
+      }
+    },
+    {
+      "id": "TASK-20260812-002",
+      "title": "项目结构初始化 + 模块化API服务器 (T-001+T-002)",
+      "description": "基于PM-001的需求分析，执行Sprint V1.0第一批任务：创建完整目录结构、搭建Flask/FastAPI模块化服务器（知识卡/题库/掌握度/飞书/总览 API）。",
+      "assigned_to": "TA-001",
+      "priority": "P0-最高",
+      "depends_on": ["TASK-20260812-001"],
+      "status": "进行中",
+      "delegation_id": "deleg_6971d1fe",
+      "assigned_at": "2026-08-12 21:45",
+      "created_at": "2026-08-12 21:40",
+      "acceptance_criteria": [
+        "目录结构符合AGENTS.md规范",
+        "config.yaml可解析",
+        "GET /api/health 返回正常",
+        "所有API模块文件 < 300行",
+        "CORS头正确设置"
+      ]
+    },
+    {
+      "id": "TASK-20260812-003",
+      "title": "审查验收：核心框架 (QA-001)",
+      "description": "对TA-001交付的代码进行功能验证、代码审查、API测试。",
+      "assigned_to": null,
+      "priority": "P0-最高",
+      "depends_on": ["TASK-20260812-002"],
+      "status": "待分配",
+      "created_at": "2026-08-12 21:40",
+      "acceptance_criteria": [
+        "所有API端点可正常调用",
+        "代码规范检查通过",
+        "错误处理完善",
+        "产出验收报告"
+      ]
+    }
+  ],
+  "completed": [
+    {
+      "id": "TASK-20260812-001",
+      "completed_at": "2026-08-12 21:39",
+      "agent": "PM-001",
+      "verification": "PASS — 26 tasks, 51 deps, 0 orphans"
+    }
+  ]
+}

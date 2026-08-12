@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛博导师 · 学案</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
+<!-- Libraries -->
+<script src="p5.min.js"></script>
+<script src="marked.min.js"></script>
+
+<style>
+/* ========================================
+   赛博导师 · 学案 — 中国风水墨主题
+   ======================================== */
+
+:root {
+  --paper: #f5f0e8;
+  --paper-dark: #ebe3d5;
+  --ink: #1a1008;
+  --ink-light: #4a3f35;
+  --ink-faint: #8c7b6b;
+  --vermillion: #c0392b;
+  --vermillion-light: #e74c3c;
+  --ochre: #d4a017;
+  --ochre-light: #e8c547;
+  --jade: #5b8c5a;
+  --border: #d4c5b2;
+  --shadow: rgba(26,16,8,0.06);
+  --serif: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  --sans: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --brush: 'Ma Shan Zheng', cursive;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 宣纸纹理 */
+body::before {
+  content: '';
+  position: fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse at 15% 15%, rgba(180,160,130,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 80%, rgba(140,120,100,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 45% 40%, rgba(200,180,150,0.05) 0%, transparent 65%);
+  opacity: 0.7;
+}
+
+/* ========================================
+   顶栏 — 卷轴轴杆
+   ======================================== */
+.top-rod {
+  position: relative; z-index:2;
+  height: 7px;
+  background: linear-gradient(90deg, #6b3410, #8B4513 18%, #A0522D 40%, #CD853F 55%, #A0522D 72%, #8B4513 88%, #6b3410);
+  border-radius: 3px;
+  margin: 8px 20px 0;
+  box-shadow: 0 2px 6px var(--shadow);
+  opacity: 0.7;
+}
+.top-rod::before, .top-rod::after {
+  content: '';
+  position: absolute; top: -2px;
+  width: 14px; height: 11px;
+  background: linear-gradient(180deg, #CD853F, #8B4513);
+  border-radius: 3px;
+}
+.top-rod::before { left: -4px; }
+.top-rod::after { right: -4px; }
+
+/* ========================================
+   头部
+   ======================================== */
+.header {
+  position: relative; z-index:2;
+  text-align: center;
+  padding: 20px 24px 8px;
+}
+.header h1 {
+  font-family: var(--brush);
+  font-size: 38px;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 6px;
+  line-height: 1.2;
+}
+.header .seal {
+  display: inline-block;
+  border: 2px solid var(--vermillion);
+  color: var(--vermillion);
+  padding: 4px 10px;
+  font-family: var(--brush);
+  font-size: 13px;
+  letter-spacing: 3px;
+  transform: rotate(-3deg);
+  opacity: 0.75;
+  margin-left: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.header .subtitle {
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+/* ========================================
+   导航标签栏 — 竹简风格
+   ======================================== */
+.nav-bar {
+  position: relative; z-index:2;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0 20px;
+}
+.nav-tab {
+  padding: 10px 22px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.25s;
+  letter-spacing: 1px;
+  position: relative;
+  background: transparent;
+}
+.nav-tab:hover {
+  color: var(--ink);
+  background: rgba(180,160,130,0.15);
+}
+.nav-tab.active {
+  color: var(--vermillion);
+  background: var(--paper);
+  border-color: var(--border);
+  border-bottom: 2px solid var(--paper);
+  margin-bottom: -1px;
+}
+.nav-tab .badge {
+  display: inline-block;
+  background: var(--vermillion);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-family: var(--sans);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+/* ========================================
+   主内容区
+   ======================================== */
+.main-content {
+  position: relative; z-index:1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+/* ========================================
+   总览面板
+   ======================================== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  backdrop-filter: blur(4px);
+}
+.stat-card .label {
+  font-size: 12px;
+  color: var(--ink-faint);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.stat-card .value.accent {
+  color: var(--vermillion);
+}
+
+/* 掌握度可视化画布 */
+#mastery-canvas-wrap {
+  grid-column: 1 / -1;
+  background: rgba(255,255,255,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#mastery-canvas-wrap canvas {
+  display: block;
+}
+
+/* ========================================
+   知识卡列表
+   ======================================== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 2px;
+}
+.search-box {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.5);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 220px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-box:focus {
+  border-color: var(--vermillion);
+}
+.search-box::placeholder {
+  color: var(--ink-faint);
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-item {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.card-item:hover {
+  border-color: var(--ochre);
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px var(--shadow);
+  transform: translateX(3px);
+}
+.card-item .card-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+.card-item .card-info {
+  flex: 1;
+  min-width: 0;
+}
+.card-item .card-title {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.card-item .card-preview {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-item .card-module {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+.card-item .card-arrow {
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   知识卡详情（预览窗格）
+   ======================================== */
+.detail-panel {
+  display: none;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 28px;
+  margin-top: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.detail-panel.visible {
+  display: block;
+  animation: fadeSlideIn 0.3s ease;
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.detail-panel .back-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-light);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  background: transparent;
+}
+.detail-panel .back-btn:hover {
+  border-color: var(--vermillion);
+  color: var(--vermillion);
+}
+.detail-panel .detail-meta {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+/* Markdown 渲染后的样式 */
+.rendered-content {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--ink);
+}
+.rendered-content h1 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
+  margin: 20px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+}
+.rendered-content h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 22px 0 10px;
+  color: var(--ink-light);
+}
+.rendered-content h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: var(--vermillion);
+}
+.rendered-content p {
+  margin: 8px 0;
+}
+.rendered-content ul, .rendered-content ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+.rendered-content li {
+  margin: 4px 0;
+}
+.rendered-content strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rendered-content em {
+  color: var(--vermillion);
+  font-style: normal;
+  font-weight: 600;
+}
+.rendered-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 14px;
+}
+.rendered-content th {
+  background: rgba(139,69,19,0.08);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  font-family: var(--serif);
+  font-weight: 700;
+  text-align: left;
+  color: var(--ink);
+}
+.rendered-content td {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+}
+.rendered-content code {
+  background: rgba(139,69,19,0.06);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+.rendered-content blockquote {
+  border-left: 3px solid var(--ochre);
+  margin: 12px 0;
+  padding: 8px 16px;
+  background: rgba(212,160,23,0.06);
+  border-radius: 0 4px 4px 0;
+  color: var(--ink-light);
+}
+.rendered-content hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* ========================================
+   每日计划
+   ======================================== */
+.plan-timeline {
+  position: relative;
+  padding-left: 28px;
+  border-left: 2px solid var(--border);
+}
+.plan-day {
+  position: relative;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.plan-day:hover {
+  border-color: var(--ochre);
+  background: rgba(255,255,255,0.8);
+}
+.plan-day::before {
+  content: '';
+  position: absolute;
+  left: -35px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  background: var(--paper);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+}
+.plan-day.today::before {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  box-shadow: 0 0 0 4px rgba(192,57,43,0.15);
+}
+.plan-day .plan-date {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.plan-day.today .plan-date {
+  color: var(--vermillion);
+}
+.plan-day .plan-title {
+  font-size: 15px;
+  color: var(--ink-light);
+}
+
+/* ========================================
+   练题工坊
+   ======================================== */
+.quiz-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+.quiz-empty .brush-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* ========================================
+   底部卷轴
+   ======================================== */
+.bottom-rod {
+  position: relative; z-index:2;
+  height: 7px;
+  background: linear-gradient(90deg, #6b3410, #8B4513 18%, #A0522D 40%, #CD853F 55%, #A0522D 72%, #8B4513 88%, #6b3410);
+  border-radius: 3px;
+  margin: 0 20px 16px;
+  opacity: 0.7;
+}
+.bottom-rod::before, .bottom-rod::after {
+  content: '';
+  position: absolute; top: -2px;
+  width: 14px; height: 11px;
+  background: linear-gradient(180deg, #CD853F, #8B4513);
+  border-radius: 3px;
+}
+.bottom-rod::before { left: -4px; }
+.bottom-rod::after { right: -4px; }
+
+/* ========================================
+   Loading / 状态
+   ======================================== */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  letter-spacing: 2px;
+}
+.error-msg {
+  text-align: center;
+  padding: 20px;
+  color: var(--vermillion);
+  font-size: 13px;
+}
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+/* 响应式 */
+@media (max-width: 720px) {
+  .overview-grid { grid-template-columns: 1fr; }
+  .nav-tab { padding: 8px 14px; font-size: 13px; }
+  .header h1 { font-size: 28px; }
+}
+
+/* ========================================
+   模块进度条
+   ======================================== */
+.module-bars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+.module-bar-item {
+  padding: 2px 0;
+}
+.module-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-light);
+  margin-bottom: 2px;
+}
+.module-bar-label span:first-child {
+  font-family: var(--serif);
+  letter-spacing: 1px;
+}
+.module-bar-pct {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.module-bar-track {
+  height: 6px;
+  background: rgba(139,69,19,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.module-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  min-width: 2%;
+}
+.module-bar-fill.bar-low { background: linear-gradient(90deg, #d4c5b2, #c4a882); }
+.module-bar-fill.bar-mid { background: linear-gradient(90deg, #d4a017, #c0851a); }
+.module-bar-fill.bar-high { background: linear-gradient(90deg, #c0392b, #a33024); }
+
+@media (max-width: 720px) {
+  .module-bars-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ========================================
+   练题工坊 — 交互
+   ======================================== */
+.quiz-start-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+.quiz-start-screen .quiz-icon {
+  font-size: 52px;
+  display: block;
+  margin-bottom: 10px;
+}
+.quiz-start-screen h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.quiz-start-screen p {
+  color: var(--ink-faint);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.quiz-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.quiz-filter-tag {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+  color: var(--ink-light);
+  transition: all 0.2s;
+  font-family: var(--serif);
+  letter-spacing: 1px;
+}
+.quiz-filter-tag:hover { border-color: var(--vermillion); color: var(--vermillion); }
+.quiz-filter-tag.active { background: var(--vermillion); color: #fff; border-color: var(--vermillion); }
+.quiz-btn {
+  padding: 12px 36px;
+  background: var(--vermillion);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quiz-btn:hover { background: var(--vermillion-light); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(192,57,43,0.2); }
+.quiz-btn:disabled { background: var(--ink-faint); cursor: not-allowed; transform: none; }
+
+/* 答题界面 */
+.quiz-session { animation: fadeSlideIn 0.3s ease; }
+.quiz-progress-bar {
+  height: 4px;
+  background: rgba(139,69,19,0.08);
+  border-radius: 2px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.quiz-progress-fill {
+  height: 100%;
+  background: var(--vermillion);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.quiz-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.quiz-q-num {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--vermillion);
+  letter-spacing: 1px;
+}
+.quiz-q-module {
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.quiz-stem {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.7;
+  margin-bottom: 18px;
+  color: var(--ink);
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-option {
+  padding: 14px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quiz-option:hover { border-color: var(--ochre); background: rgba(255,255,255,0.8); }
+.quiz-option.selected { border-color: var(--vermillion); background: rgba(192,57,43,0.06); }
+.quiz-option.correct { border-color: var(--jade); background: rgba(91,140,90,0.08); }
+.quiz-option.wrong { border-color: var(--vermillion); background: rgba(192,57,43,0.08); }
+.quiz-option.disabled { pointer-events: none; opacity: 0.7; }
+.quiz-option-letter {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  color: var(--ink-light);
+}
+.quiz-option.selected .quiz-option-letter { border-color: var(--vermillion); color: var(--vermillion); background: rgba(192,57,43,0.1); }
+.quiz-option.correct .quiz-option-letter { border-color: var(--jade); color: var(--jade); background: rgba(91,140,90,0.1); }
+.quiz-option.wrong .quiz-option-letter { border-color: var(--vermillion); color: var(--vermillion); background: rgba(192,57,43,0.1); }
+.quiz-explanation {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(212,160,23,0.06);
+  border-left: 3px solid var(--ochre);
+  border-radius: 0 6px 6px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-light);
+  display: none;
+  white-space: pre-line;
+}
+.quiz-explanation.visible { display: block; animation: fadeSlideIn 0.3s ease; }
+.quiz-explanation strong { color: var(--vermillion); font-weight: 700; }
+.quiz-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.quiz-nav-btn {
+  padding: 10px 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--serif);
+  font-size: 14px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+  color: var(--ink-light);
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.quiz-nav-btn:hover { border-color: var(--vermillion); color: var(--vermillion); }
+.quiz-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 结果页 */
+.quiz-result { text-align: center; padding: 30px 20px; animation: fadeSlideIn 0.4s ease; }
+.quiz-result .score-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--vermillion);
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--vermillion);
+  margin-bottom: 16px;
+}
+.quiz-result .score-detail { font-size: 14px; color: var(--ink-faint); margin-bottom: 8px; }
+.quiz-result .wrong-list { text-align: left; max-width: 600px; margin: 20px auto 0; }
+.quiz-result .wrong-item {
+  padding: 10px 14px;
+  margin: 8px 0;
+  background: rgba(192,57,43,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.quiz-result .wrong-item:hover { border-color: var(--vermillion); }
+</style>
+</head>
+<body>
+
+<!-- 卷轴上轴杆 -->
+<div class="top-rod"></div>
+
+<!-- 头部 -->
+<div class="header">
+  <h1>赛博导师 · 学案<span class="seal">学案</span></h1>
+  <div class="subtitle" id="header-subtitle">加载中...</div>
+</div>
+
+<!-- 导航标签 -->
+<nav class="nav-bar" id="nav-bar">
+  <button class="nav-tab active" data-tab="overview">学案总览</button>
+  <button class="nav-tab" data-tab="knowledge">知识宝库<span class="badge" id="card-count-badge">0</span></button>
+  <button class="nav-tab" data-tab="plan">每日计划</button>
+  <button class="nav-tab" data-tab="quiz">练题工坊</button>
+</nav>
+
+<!-- 主内容区 -->
+<div class="main-content" id="main-content">
+  <!-- 动态填充 -->
+</div>
+
+<!-- 卷轴下轴杆 -->
+<div class="bottom-rod"></div>
+
+<script>
+// ========================================
+// 赛博导师 · 学案 — 前端逻辑
+// ========================================
+
+const API_BASE = window.location.origin;  // 自动适配电脑/手机访问
+let overviewData = null;
+let currentTab = 'overview';
+let p5Instance = null;
+
+// 练题状态
+let quizQuestions = [];
+let quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: false };
+// BUG-2：练题闭环 — 会话内作答同步到服务端的计数（答错自动落库错题记录）
+let quizSyncStats = { ok: 0, fail: 0 };
+
+// === Tab 切换 ===
+document.getElementById('nav-bar').addEventListener('click', (e) => {
+  const tab = e.target.closest('.nav-tab');
+  if (!tab) return;
+  const tabId = tab.dataset.tab;
+  if (tabId === currentTab) return;
+  switchTab(tabId);
+});
+
+function switchTab(tabId) {
+  currentTab = tabId;
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+  renderTab(tabId);
+}
+
+// === 数据加载 ===
+async function fetchAPI(endpoint) {
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error(`API 错误: ${endpoint}`, err);
+    return null;
+  }
+}
+
+async function init() {
+  overviewData = await fetchAPI('/api/overview');
+  if (!overviewData) {
+    document.getElementById('main-content').innerHTML =
+      '<div class="error-msg">⚠️ 无法连接到学习服务器。请确认 server.py 已启动（python server.py）</div>';
+    document.getElementById('header-subtitle').textContent = '未连接';
+    return;
+  }
+  const d = overviewData;
+  document.getElementById('header-subtitle').textContent =
+    `备考中  ·  距考 ${d.days_remaining} 天`;
+  document.getElementById('card-count-badge').textContent = d.knowledge_cards.total;
+  renderTab('overview');
+}
+
+// === 渲染各标签页 ===
+function renderTab(tabId) {
+  const container = document.getElementById('main-content');
+  if (!overviewData) {
+    container.innerHTML = '<div class="loading">加载中...</div>';
+    return;
+  }
+  switch (tabId) {
+    case 'overview': renderOverview(container); break;
+    case 'knowledge': renderKnowledge(container); break;
+    case 'plan': renderDailyPlan(container); break;
+    case 'quiz': renderQuiz(container); break;
+  }
+}
+
+// === 总览 ===
+function renderOverview(container) {
+  const d = overviewData;
+  const modules = d.mastery?.modules || {};
+  const moduleNames = Object.keys(modules);
+  const anyProgress = Object.values(modules).some(m => m.mastery > 0);
+
+  // 有进度的模块数
+  const modulesWithProgress = Object.values(modules).filter(m => m.mastery > 0).length;
+
+  // 进度条
+  const progressBars = moduleNames.map(name => {
+    const m = modules[name] || {mastery:0, correct_rate:0, weak:false};
+    const pct = m.mastery || 0;
+    const colorClass = pct >= 60 ? 'bar-high' : pct >= 30 ? 'bar-mid' : 'bar-low';
+    return `
+      <div class="module-bar-item">
+        <div class="module-bar-label">
+          <span>${name}</span>
+          <span class="module-bar-pct">${pct}%</span>
+        </div>
+        <div class="module-bar-track">
+          <div class="module-bar-fill ${colorClass}" style="width:${Math.max(pct, 2)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="overview-grid">
+      <div class="stat-card">
+        <div class="label">距考试</div>
+        <div class="value accent">${d.days_remaining} 天</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">已练模块</div>
+        <div class="value">${modulesWithProgress}/${moduleNames.length}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">知识卡</div>
+        <div class="value">${d.knowledge_cards.total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">题库总量</div>
+        <div class="value">${d.quiz_bank.total_questions}</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">📊 模块掌握度</div>
+      ${anyProgress ? '<span class="badge" style="font-size:11px;">有进度</span>' : '<span style="font-size:12px;color:var(--ink-faint);">尚未练题，进度全为 0%</span>'}
+    </div>
+    <div class="module-bars-grid">
+      ${progressBars}
+    </div>
+    ${anyProgress ? '<div id="mastery-canvas-wrap" style="margin-top:12px;min-height:200px;"></div>' : ''}
+  `;
+
+  if (anyProgress) {
+    // p5.min.js 首次访问需下载约1MB，可能未就绪；轮询等待（最多5秒）再初始化雷达图
+    let tries = 0;
+    const tryInit = () => {
+      if (typeof p5 !== 'undefined' || tries++ >= 50) initMasteryCanvas(d.mastery);
+      else setTimeout(tryInit, 100);
+    };
+    setTimeout(tryInit, 100);
+  }
+}
+
+// === 紧凑版 p5.js 水墨风雷达图（仅在有数据时显示）===
+function initMasteryCanvas(masteryData) {
+  const wrap = document.getElementById('mastery-canvas-wrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('canvas').forEach(c => c.remove());
+  wrap.querySelectorAll('div').forEach(d => d.remove());
+  if (p5Instance) { p5Instance.remove(); p5Instance = null; }
+
+  const modules = masteryData?.modules || {};
+  const moduleNames = Object.keys(modules);
+  if (moduleNames.length === 0) return;
+
+  const sketch = (p) => {
+    let hoveredIdx = -1;
+    const names = moduleNames.map(n => n.length > 6 ? n.slice(0, 5) + '…' : n);
+    const fullNames = moduleNames;
+    const values = moduleNames.map(n => modules[n]?.mastery || 0);
+    let tooltipEl = null;
+    const geo = () => ({ cx: p.width / 2, cy: p.height / 2, r: Math.min(p.width, p.height) * 0.40 });
+
+    p.setup = function() {
+      const w = wrap.clientWidth;
+      const h = 240;
+      const canvas = p.createCanvas(w, h);
+      canvas.parent(wrap);
+      // 注：BUG-1 修复 — HSB colorMode 的 alpha 上限必须与传入值同量纲。
+      // 原为 colorMode(HSB,360,100,100,100) 但所有 stroke/fill 传 0.2~0.9 的小数 alpha，
+      // 导致实际透明度≈0.2%/100% 几乎全透明；改为 alpha 上限 1，0.x 即 0~100% 透明度。
+      p.colorMode(p.HSB, 360, 100, 100, 1);
+      tooltipEl = document.createElement('div');
+      tooltipEl.style.cssText = `
+        position:absolute; pointer-events:none; z-index:99;
+        background:rgba(26,16,8,0.88); color:#f5f0e8; padding:6px 12px;
+        border-radius:4px; font-size:12px; font-family:'Noto Sans SC',sans-serif;
+        letter-spacing:1px; opacity:0; transition:opacity 0.15s; white-space:nowrap;
+      `;
+      wrap.style.position = 'relative';
+      wrap.appendChild(tooltipEl);
+    };
+
+    p.draw = function() {
+      p.clear();
+      const { cx, cy, r } = geo();
+
+      // 参考圈
+      for (let level = 1; level <= 3; level++) {
+        const lr = (r / 4) * level;
+        p.stroke(30, 8, 55, 0.2);
+        p.strokeWeight(0.5);
+        p.noFill();
+        p.ellipse(cx, cy, lr * 2, lr * 2);
+        p.fill(30, 5, 45, 0.4);
+        p.noStroke();
+        p.textAlign(p.CENTER);
+        p.textSize(9);
+        p.text(`${level * 33}%`, cx, cy - lr + 12);
+      }
+
+      // 轴线
+      for (let i = 0; i < names.length; i++) {
+        const angle = p.map(i, 0, names.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const x2 = cx + r * p.cos(angle);
+        const y2 = cy + r * p.sin(angle);
+        const isHovered = (i === hoveredIdx);
+        p.stroke(isHovered ? 0 : 26, isHovered ? 85 : 12, isHovered ? 55 : 50, isHovered ? 0.9 : 0.3);
+        p.strokeWeight(isHovered ? 2 : 0.6);
+        p.line(cx, cy, x2, y2);
+        const lx = cx + (r + 13) * p.cos(angle);
+        const ly = cy + (r + 13) * p.sin(angle);
+        p.fill(26, 15, 35, 0.7);
+        p.noStroke();
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(10);
+        p.text(names[i], lx, ly);
+      }
+
+      // 数据区
+      p.beginShape();
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const vr = r * (values[i] / 100);
+        p.curveVertex(cx + vr * p.cos(angle), cy + vr * p.sin(angle));
+      }
+      for (let i = 0; i < 3; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[0] / 100) * p.cos(angle), cy + r * (values[0] / 100) * p.sin(angle));
+      }
+      p.endShape(p.CLOSE);
+      p.fill(0, 85, 55, 0.22);
+      p.noStroke();
+      p.beginShape();
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[i] / 100) * p.cos(angle), cy + r * (values[i] / 100) * p.sin(angle));
+      }
+      for (let i = 0; i < 3; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[0] / 100) * p.cos(angle), cy + r * (values[0] / 100) * p.sin(angle));
+      }
+      p.endShape(p.CLOSE);
+
+      // 数据点
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const vr = r * (values[i] / 100);
+        p.fill(0, 85, 55, 0.6);
+        p.noStroke();
+        p.ellipse(cx + vr * p.cos(angle), cy + vr * p.sin(angle), 4, 4);
+      }
+    };
+
+    // === 交互：鼠标悬停显示模块名称与掌握度（消除"死区"感）===
+    p.mouseMoved = function() {
+      const { cx, cy, r } = geo();
+      let nearest = -1;
+      let bestDist = 1e9;
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const lx = cx + (r + 13) * p.cos(angle);
+        const ly = cy + (r + 13) * p.sin(angle);
+        const d = p.dist(p.mouseX, p.mouseY, lx, ly);
+        if (d < bestDist) { bestDist = d; nearest = i; }
+      }
+      hoveredIdx = (bestDist < 42) ? nearest : -1;
+      if (hoveredIdx >= 0) {
+        tooltipEl.textContent = `${fullNames[hoveredIdx]}：${values[hoveredIdx]}%`;
+        tooltipEl.style.left = (p.mouseX + 12) + 'px';
+        tooltipEl.style.top = (p.mouseY - 10) + 'px';
+        tooltipEl.style.opacity = '1';
+      } else {
+        tooltipEl.style.opacity = '0';
+      }
+    };
+
+    p.mouseOut = function() {
+      hoveredIdx = -1;
+      if (tooltipEl) tooltipEl.style.opacity = '0';
+    };
+  };
+
+  try {
+    if (typeof p5 !== 'undefined') {
+      p5.disableFriendlyErrors = true;
+      p5Instance = new p5(sketch);
+    }
+  } catch(e) {}
+}
+
+// === 知识宝库 ===
+async function renderKnowledge(container) {
+  // /api/overview 的 knowledge_cards 是 {total, modules} 统计对象；卡片数组从 /api/knowledge 获取
+  let cards = [];
+  try {
+    const kResp = await fetch(`${API_BASE}/api/knowledge`);
+    if (kResp.ok) {
+      const kData = await kResp.json();
+      if (Array.isArray(kData.cards)) cards = kData.cards;
+    }
+  } catch(e) {}
+  if (cards.length === 0 && Array.isArray(overviewData.knowledge_cards)) {
+    cards = overviewData.knowledge_cards;
+  }
+  let qualityMap = {};
+
+  // 获取质量评分
+  try {
+    const qResp = await fetch(`${API_BASE}/api/quality`);
+    if (qResp.ok) {
+      const qData = await qResp.json();
+      qData.cards.forEach(c => { qualityMap[c.path] = c; });
+    }
+  } catch(e) {}
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">📜 知识宝库</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${Object.keys(qualityMap).length > 0 ? `<span style="font-size:12px;color:var(--ink-faint);">均分: ${(Object.values(qualityMap).reduce((a,c)=>a+c.score,0)/Math.max(Object.values(qualityMap).length,1)).toFixed(0)}</span>` : ''}
+        <input class="search-box" id="knowledge-search" placeholder="搜索知识卡..." />
+        <button style="padding:6px 12px;border:1px solid var(--border);border-radius:16px;font-size:11px;cursor:pointer;background:rgba(255,255,255,0.5);color:var(--ink-light);font-family:var(--serif);" onclick="renderKnowledgeSummary()">📋 考点汇总</button>
+      </div>
+    </div>
+    <div class="card-list" id="card-list"></div>
+    <div class="detail-panel" id="detail-panel"></div>
+  `;
+
+  renderCardList(cards, qualityMap);
+
+  document.getElementById('knowledge-search').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = q ? cards.filter(c =>
+      c.title.toLowerCase().includes(q) || c.module.toLowerCase().includes(q)
+    ) : cards;
+    renderCardList(filtered, qualityMap);
+  });
+}
+
+function renderCardList(cards, qualityMap) {
+  const list = document.getElementById('card-list');
+  if (!list) return;
+  if (cards.length === 0) {
+    list.innerHTML = '<div class="empty-state">📭 暂无知识卡</div>';
+    return;
+  }
+  const moduleIcons = {
+    '时政热点': '📰', '中国特色社会主义理论': '🏛️', '马克思主义哲学': '📖',
+    '毛泽东思想': '⭐', '中共党史': '🚩', '三农与乡村振兴': '🌾',
+    '法律': '⚖️', '经济常识': '💰', '地理科技': '🌍',
+    '历史人文': '🏺', '公文写作': '✍️', '河南省情': '🏠'
+  };
+  list.innerHTML = cards.map(c => {
+    const q = qualityMap[c.path];
+    const scoreHtml = q ? `<span style="font-size:11px;padding:1px 6px;border-radius:8px;margin-left:6px;
+      ${q.score >= 80 ? 'background:rgba(192,57,43,0.12);color:var(--vermillion);' :
+        q.score >= 55 ? 'background:rgba(212,160,23,0.12);color:var(--ochre);' :
+        'background:rgba(140,123,107,0.1);color:var(--ink-faint);'}
+      font-weight:700;">${q.score}分</span>` : '';
+    const warns = q && q.score < 70 ? q.details.filter(d => d.includes('缺少')).slice(0,2).map(d => `<span style="font-size:10px;color:var(--ink-faint);margin-left:4px;">${d.replace('缺少','缺')}</span>`).join('') : '';
+    return `
+      <div class="card-item" data-path="${c.path}">
+        <div class="card-icon">${moduleIcons[c.module] || '📄'}</div>
+        <div class="card-info">
+          <div class="card-title">${c.title}${scoreHtml}</div>
+          <div class="card-preview">${c.preview || ''}</div>
+          <div class="card-module">${c.module} · ${(c.size / 1024).toFixed(1)} KB · ${c.keywords || ''}${warns}</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.card-item').forEach(item => {
+    item.addEventListener('click', () => loadKnowledgeCard(item.dataset.path));
+  });
+}
+
+async function loadKnowledgeCard(path) {
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = '<div class="loading">加载中...</div>';
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior: 'smooth' });
+
+  const card = await fetchAPI(`/api/knowledge/card?path=${encodeURIComponent(path)}`);
+  if (!card) {
+    panel.innerHTML = '<div class="error-msg">加载失败</div>';
+    return;
+  }
+
+  panel.innerHTML = `
+    <button class="back-btn" onclick="closeDetail()">← 返回列表</button>
+    <div class="detail-meta">📂 ${card.module || '未分类'} · ${(card.content?.length || 0)} 字</div>
+    <div class="rendered-content">${marked.parse(card.content || '')}</div>
+  `;
+}
+
+function closeDetail() {
+  const panel = document.getElementById('detail-panel');
+  if (panel) panel.classList.remove('visible');
+}
+
+// === 每日计划 ===
+function renderDailyPlan(container) {
+  const plans = overviewData.daily_plans || [];
+  // BUG-4 修复：东八区（Asia/Shanghai, UTC+8）当天日期。
+  // 原实现 new Date().toISOString() 为 UTC 日期，清晨 0-8 点（UTC 仍为前一日）会高亮错日子。
+  const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">📅 每日计划</div>
+    </div>
+    <div class="plan-timeline" id="plan-timeline"></div>
+    <div class="detail-panel" id="plan-detail"></div>
+  `;
+
+  const timeline = document.getElementById('plan-timeline');
+  if (plans.length === 0) {
+    timeline.innerHTML = '<div class="empty-state">📭 暂无学习计划</div>';
+    return;
+  }
+
+  timeline.innerHTML = plans.map(p => {
+    const isToday = p.date === today;
+    return `
+      <div class="plan-day${isToday ? ' today' : ''}" data-date="${p.date}">
+        <div class="plan-date">${p.date} ${isToday ? '【今天】' : ''}</div>
+        <div class="plan-title">${p.title || '查看详情 →'}</div>
+      </div>
+    `;
+  }).join('');
+
+  timeline.querySelectorAll('.plan-day').forEach(day => {
+    day.addEventListener('click', async () => {
+      const date = day.dataset.date;
+      const detail = document.getElementById('plan-detail');
+      detail.innerHTML = '<div class="loading">加载中...</div>';
+      detail.classList.add('visible');
+      detail.scrollIntoView({ behavior: 'smooth' });
+
+      const resp = await fetchAPI(`/api/daily-plan?date=${date}`);
+      const plan = resp?.[0];
+      if (!plan) {
+        detail.innerHTML = '<div class="error-msg">加载失败</div>';
+        return;
+      }
+      detail.innerHTML = `
+        <button class="back-btn" onclick="document.getElementById('plan-detail').classList.remove('visible')">← 返回</button>
+        <div class="detail-meta">📅 ${plan.date}</div>
+        <div class="rendered-content">${marked.parse(plan.content || '')}</div>
+      `;
+    });
+  });
+}
+
+// === 练题工坊（完整交互） ===
+async function renderQuiz(container) {
+  const quiz = overviewData.quiz_bank || overviewData.quiz_summary || {};
+  const quizTotal = quiz.total_questions ?? quiz.total ?? 0;
+
+  // 加载题目
+  if (quizQuestions.length === 0 && quizTotal > 0) {
+    container.innerHTML = '<div class="loading">加载题库中...</div>';
+    try {
+      const resp = await fetch(`${API_BASE}/api/quiz/questions`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data)) quizQuestions = data;
+        else if (data && Array.isArray(data.questions)) quizQuestions = data.questions;
+      }
+    } catch(e) { console.error('加载题库失败:', e); }
+  }
+
+  // 练题中 → 显示当前题目
+  if (quizState.active && quizQuestions.length > 0) {
+    renderQuizSession(container);
+    return;
+  }
+
+  // 结果页 → 显示成绩
+  if (!quizState.active && Object.keys(quizState.answers).length > 0) {
+    renderQuizResult(container);
+    return;
+  }
+
+  // 首页
+  const modules = [...new Set(quizQuestions.map(q => q.module))];
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">⚔️ 练题工坊</div>
+    </div>
+    <div class="quiz-start-screen">
+      <span class="quiz-icon">📝</span>
+      <h3>${quizQuestions.length > 0 ? `共 ${quizQuestions.length} 题待练` : '暂无题目'}</h3>
+      <p>${quizQuestions.length > 0 ? '选择模块开始练题，作答后即时查看解析' : '开始学习后，练题数据将在此呈现'}</p>
+      ${quizQuestions.length > 0 ? `
+        <div class="quiz-filters" id="quiz-filters">
+          <span class="quiz-filter-tag active" data-module="all">全部</span>
+          ${modules.map(m => `<span class="quiz-filter-tag" data-module="${m}">${m}</span>`).join('')}
+        </div>
+        <button class="quiz-btn" id="quiz-start-btn" onclick="startQuiz()">开始练题</button>
+      ` : ''}
+    </div>
+  `;
+
+  if (quizQuestions.length > 0) {
+    let selModule = 'all';
+    document.getElementById('quiz-filters').addEventListener('click', (e) => {
+      const tag = e.target.closest('.quiz-filter-tag');
+      if (!tag) return;
+      document.querySelectorAll('.quiz-filter-tag').forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      selModule = tag.dataset.module;
+    });
+    window._quizModule = () => selModule;
+  }
+}
+
+// 解析渲染：优先使用五字段强类型（迁移后），无则回退原始 explanation
+function formatExplanation(q) {
+  const parts = [];
+  if (q.correct_answer) parts.push(q.correct_answer);
+  if (q.term_breakdown) parts.push(q.term_breakdown);
+  if (q.option_analysis) parts.push(q.option_analysis);
+  if (q.exam_hint) parts.push(q.exam_hint);
+  if (q.mnemonic) parts.push(q.mnemonic);
+  if (parts.length) return `<strong>解析：</strong>${parts.join('\n\n')}`;
+  return `<strong>解析：</strong>${q.explanation || ''}`;
+}
+
+function startQuiz() {
+  const selModule = (window._quizModule && window._quizModule()) || 'all';
+  quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: true };
+  quizSyncStats = { ok: 0, fail: 0 };
+  // 筛选题目
+  if (selModule === 'all') {
+    quizState.filtered = [...quizQuestions];
+  } else {
+    quizState.filtered = quizQuestions.filter(q => q.module === selModule);
+  }
+  if (quizState.filtered.length === 0) {
+    alert('该模块暂无题目');
+    return;
+  }
+  renderTab('quiz');
+}
+
+function renderQuizSession(container) {
+  const qs = quizState;
+  const questions = qs.filtered;
+  const q = questions[qs.currentIdx];
+  const total = questions.length;
+  const idx = qs.currentIdx;
+
+  container.innerHTML = `
+    <div class="quiz-session">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" style="width:${((idx + 1) / total) * 100}%"></div>
+      </div>
+      <div class="quiz-question-header">
+        <span class="quiz-q-num">第 ${idx + 1}/${total} 题 · ${q.type}</span>
+        <span class="quiz-q-module">${q.module}</span>
+      </div>
+      <div class="quiz-stem">${q.stem}</div>
+      <div class="quiz-options" id="quiz-options">
+        ${Object.entries(q.options).map(([k, v]) => {
+          const isSelected = qs.answers[idx] === k;
+          const isRevealed = qs.revealed[idx];
+          const isCorrect = k === q.answer;
+          let cls = 'quiz-option';
+          if (isRevealed) { cls += ' disabled'; if (isCorrect) cls += ' correct'; else if (isSelected && !isCorrect) cls += ' wrong'; }
+          else if (isSelected) cls += ' selected';
+          return `<div class="${cls}" data-answer="${k}" ${isRevealed ? '' : `onclick="selectAnswer(${idx}, '${k}')"`}>
+            <span class="quiz-option-letter">${k}</span>
+            <span>${v}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="quiz-explanation ${qs.revealed[idx] ? 'visible' : ''}" id="quiz-explanation">
+        ${qs.revealed[idx] ? formatExplanation(q) : ''}
+      </div>
+      <div class="quiz-nav">
+        <button class="quiz-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="prevQuestion()">← 上一题</button>
+        ${idx < total - 1
+          ? `<button class="quiz-nav-btn" onclick="nextQuestion()">下一题 →</button>`
+          : `<button class="quiz-btn" onclick="finishQuiz()">完成练题</button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function selectAnswer(idx, answer) {
+  if (quizState.revealed[idx]) return;
+  quizState.answers[idx] = answer;
+  quizState.revealed[idx] = true;
+  const q = quizState.filtered[idx];
+  if (answer === q.answer) quizState.score++;
+  submitAnswerToServer(q, answer);  // BUG-2：作答同步服务端（异步 fire-and-forget，不阻塞练题流程）
+  renderTab('quiz');
+}
+
+// BUG-2 修复：练题前端接入服务端闭环 — 每答一题 POST /api/quiz/submit，
+// 答错自动在服务端 data/wrong-questions/ 落库、wrong 列表与 mastery 联动更新；
+// 答对计入 answer-records / stats。失败仅降级为本地判分，不影响交互与考试倒计时。
+async function submitAnswerToServer(q, userAnswer) {
+  try {
+    const resp = await fetch(`${API_BASE}/api/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question_id: (q.question_id || q._id || '').toString(),
+        user_answer: userAnswer,
+        module: q.module || ''
+      })
+    });
+    if (!resp.ok) { quizSyncStats.fail++; return; }
+    const d = await resp.json();
+    if (d && typeof d.is_correct === 'boolean') quizSyncStats.ok++;
+    else quizSyncStats.fail++;
+  } catch (e) {
+    quizSyncStats.fail++;
+    console.warn('[quiz] 学习记录同步失败（本地判分不受影响）:', e);
+  }
+}
+
+function nextQuestion() {
+  if (quizState.currentIdx < quizState.filtered.length - 1) {
+    quizState.currentIdx++;
+    renderTab('quiz');
+  }
+}
+
+function prevQuestion() {
+  if (quizState.currentIdx > 0) {
+    quizState.currentIdx--;
+    renderTab('quiz');
+  }
+}
+
+function finishQuiz() {
+  quizState.active = false;
+  renderTab('quiz');
+}
+
+function renderQuizResult(container) {
+  const qs = quizState;
+  const total = qs.filtered.length;
+  const score = qs.score;
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+  const wrongList = qs.filtered.filter((q, i) => qs.answers[i] !== q.answer);
+
+  container.innerHTML = `
+    <div class="quiz-result">
+      <div class="score-circle">${pct}%</div>
+      <h3 style="font-family:var(--serif);font-size:20px;letter-spacing:2px;">${pct >= 80 ? '🎉 优秀！' : pct >= 60 ? '👍 不错' : '💪 继续加油'}</h3>
+      <div class="score-detail">${score}/${total} 正确</div>
+      ${quizSyncStats.ok + quizSyncStats.fail > 0 ? `
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:6px;letter-spacing:0.5px;">
+          📡 学习记录已同步服务端 ${quizSyncStats.ok} 条${quizSyncStats.fail > 0 ? `（${quizSyncStats.fail} 条同步失败，本地判分不受影响）` : ''}
+        </div>` : ''}
+      ${wrongList.length > 0 ? `
+        <div class="wrong-list">
+          <div class="section-title" style="font-size:16px;margin-bottom:10px;">📋 错题回顾（${wrongList.length} 题）</div>
+          ${wrongList.map((q, i) => `
+            <div class="wrong-item" onclick="reviewWrong(${qs.filtered.indexOf(q)})">
+              <strong>${i + 1}.</strong> ${q.stem.slice(0, 60)}...
+              <br><span style="color:var(--vermillion);font-size:12px;">你的答案: ${qs.answers[qs.filtered.indexOf(q)] || '未答'} → 正确答案: ${q.answer}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<p style="color:var(--jade);margin-top:10px;">✨ 全部正确！</p>'}
+      <button class="quiz-btn" style="margin-top:20px;" onclick="resetQuiz()">再来一轮</button>
+      <button class="quiz-nav-btn" style="margin-left:10px;" onclick="quizState.answers={};quizState.revealed={};quizState.score=0;quizState.active=false;renderTab('quiz');">返回题库</button>
+    </div>
+  `;
+}
+
+function reviewWrong(idx) {
+  quizState.currentIdx = idx;
+  quizState.active = true;
+  renderTab('quiz');
+}
+
+function resetQuiz() {
+  quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: true, filtered: quizState.filtered };
+  renderTab('quiz');
+}
+
+// === 考点汇总 ===
+async function renderKnowledgeSummary() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = '<div class="loading">生成考点汇总中...</div>';
+  try {
+    const resp = await fetch(`${API_BASE}/api/summary`);
+    const data = await resp.json();
+    container.innerHTML = `
+      <div class="section-header">
+        <div class="section-title">📋 考点汇总</div>
+        <button class="back-btn" onclick="switchTab('knowledge')">← 返回宝库</button>
+      </div>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--ink-faint);">
+        覆盖 ${data.modules_covered.length} 个模块 · 共 ${data.total_key_points} 个考点
+      </div>
+      ${data.cards.map(c => `
+        <div class="stat-card" style="margin-bottom:10px;">
+          <div style="font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:8px;color:var(--ink);">${c.title}</div>
+          ${c.key_points.length > 0 ? `
+            <div style="margin-bottom:6px;">
+              ${c.key_points.map((kp,i) => `<span style="display:inline-block;padding:3px 10px;margin:2px 4px;background:rgba(192,57,43,0.06);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--ink-light);">${i+1}. ${kp.slice(0,30)}${kp.length>30?'…':''}</span>`).join('')}
+            </div>
+          ` : ''}
+          ${c.key_terms.length > 0 ? `<div style="font-size:12px;color:var(--ink-faint);">关键词: ${c.key_terms.slice(0,4).join(' · ')}</div>` : ''}
+          <div style="font-size:11px;color:var(--ink-faint);margin-top:4px;">${c.table_count} 个表格 · ${c.key_points.length} 个考点</div>
+        </div>
+      `).join('')}
+    `;
+  } catch(e) {
+    container.innerHTML = '<div class="error-msg">加载失败</div>';
+  }
+}
+
+// === 启动 ===
+init();
+</script>
+</body>
+</html>

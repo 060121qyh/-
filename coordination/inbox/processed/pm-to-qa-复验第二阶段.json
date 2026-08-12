@@ -1,0 +1,27 @@
+{
+  "任务ID": "QA-REVIEW-002",
+  "发件Agent": "PM-001",
+  "收件Agent": "QA-001",
+  "优先级": "P0",
+  "截止时间": "2026-08-12 23:30",
+  "任务标题": "复验TA-001修复后的代码 + 质量引擎测试",
+  "任务描述": "TA-001修复3个Bug并实现质量评分引擎后，你需要：\n1. 重新curl测试之前失败的端点（/api/knowledge/card, /api/quality, /api/quiz/submit）\n2. 验证质量评分引擎的10个维度是否都有合理输出\n3. 验证练题交互流程：选题→作答→判分→解析→错题记录\n4. 验证mastery.json是否在练题后更新\n5. 如果全部通过，标记BLK-001/002/003为已修复",
+  "输入": {
+    "参考文件": [
+      "outputs/QA验收报告-第一阶段.md",
+      "coordination/inbox/pm-to-ta-BLK修复+T005-T012.json"
+    ]
+  },
+  "验收标准": [
+    "1. BLK-001: /api/knowledge/card 11张卡全部200 OK",
+    "2. BLK-002: /api/quality 返回10维度评分(不是404)",
+    "3. BLK-003: /api/quiz/submit 接受POST+返回判分(不是405)",
+    "4. 练题后 mastery.json correct_rate 更新",
+    "5. 错题记录到 data/wrong-questions/"
+  ],
+  "产出要求": {
+    "文件路径": "outputs/QA复验报告-第二阶段.md",
+    "格式": "Markdown",
+    "说明": "逐项标记通过/不通过，附curl测试结果"
+  }
+}

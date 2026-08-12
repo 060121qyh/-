@@ -1,0 +1,61 @@
+# ============================================================================
+# 每日情报采集 + 飞书推送（GitHub Actions 定时任务）
+# 归属：REQ-20260813-001 / T4 云端推送准备
+#
+# 触发时间（北京时间 = UTC+8）：
+#   北京时间 07:00 → UTC 前一日 23:00 → cron '0 23 * * *'
+#   北京时间 12:00 → UTC 当日 04:00  → cron '0 4 * * *'
+#   北京时间 19:00 → UTC 当日 11:00  → cron '0 11 * * *'
+#   workflow_dispatch：支持手动触发（用于首次部署验证）
+#
+# 说明：
+#   - 云端仓库没有知识卡/题库数据（.gitignore 已排除 data/progress、data/mastery、
+#     data/daily-intel 等目录），本 workflow 推送的内容 = 当日情报摘要
+#     （河南三支一扶动态 + 相关时政），不是题库。
+#   - 采集脚本（intel_collector.py）在 CI 运行时会重新生成
+#     data/daily-intel/intel-YYYY-MM-DD.{json,md}，随后 push_intel.py 读取并推送。
+#   - 健壮性：推送步骤网络失败不使整个 job 红牌（continue-on-error: true）。
+# ============================================================================
+name: 每日情报采集与飞书推送
+
+on:
+  schedule:
+    # 北京时间 07:00（UTC 23:00，前一日）
+    - cron: '0 23 * * *'
+    # 北京时间 12:00（UTC 04:00）
+    - cron: '0 4 * * *'
+    # 北京时间 19:00（UTC 11:00）
+    - cron: '0 11 * * *'
+  workflow_dispatch: # 手动触发（用于验证）
+
+jobs:
+  daily-intel:
+    name: 采集当日情报并推送飞书
+    runs-on: ubuntu-latest
+    env:
+      # 飞书开放平台应用凭证（在仓库 Settings → Secrets 中配置）
+      FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+      FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+      FEISHU_CHAT_ID: ${{ secrets.FEISHU_CHAT_ID }}
+      # 备选群聊 ID（未配置 FEISHU_CHAT_ID 时脚本自动回退到此变量）
+      FEISHU_HOME_CHANNEL: ${{ secrets.FEISHU_HOME_CHANNEL }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安装依赖（requests + feedparser）
+        run: pip install requests feedparser
+
+      - name: 采集当日情报（最低相关分 2）
+        run: python scripts/intel_collector.py --min-score 2
+
+      - name: 推送情报摘要到飞书
+        run: python scripts/push_intel.py
+        # 网络/API 偶发失败不应让整个 job 红牌，脚本内部已有重试与退出码区分
+        continue-on-error: true

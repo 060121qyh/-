@@ -1,0 +1,68 @@
+# AI三支一扶学习导师 v2.0 — 配置文件
+# 集中管理所有路径、端口和业务配置
+
+server:
+  host: "0.0.0.0"
+  port: 8899
+  debug: false
+
+project:
+  name: "AI三支一扶学习导师"
+  version: "2.0.0"
+  goal_id: "henan-szyf-20260822"
+  exam_date: "2026-08-22"
+  base_dir: "data"
+
+paths:
+  knowledge_cards: "data/knowledge-cards"
+  quiz_bank: "data/quiz-bank"
+  mastery: "data/mastery"
+  goals: "data/goals"
+  daily_plan: "data/daily-plan"
+  static: "static"
+  templates: "templates"
+
+exam:
+  subject: "公共基础知识"
+  total_score: 100
+  duration_minutes: 120
+  question_types:
+    - name: "单选题"
+      count: 70
+      score_each: 1.0
+    - name: "多选题"
+      count: 15
+      score_each: 2.0
+    - name: "不定项选择题"
+      count: 10
+      score_each: 1.5
+
+modules:
+  - "时政热点"
+  - "中国特色社会主义理论"
+  - "马克思主义哲学"
+  - "毛泽东思想"
+  - "中共党史"
+  - "三农与乡村振兴"
+  - "法律"
+  - "经济常识"
+  - "地理科技"
+  - "历史人文"
+  - "公文写作"
+  - "河南省情"
+
+design:
+  colors:
+    paper: "#f5f0e8"
+    ink: "#1a1008"
+    ink_light: "#4a3f35"
+    vermillion: "#c0392b"
+    ochre: "#d4a017"
+    jade: "#5b8c5a"
+    border: "#d4c5b2"
+
+push:
+  schedule:
+    - { time: "07:00", label: "morning", cron: "0 7 * * *" }
+    - { time: "12:00", label: "noon", cron: "0 12 * * *" }
+    - { time: "19:00", label: "evening", cron: "0 19 * * *" }

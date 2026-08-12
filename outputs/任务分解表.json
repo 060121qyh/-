@@ -1,0 +1,529 @@
+{
+  "meta": {
+    "document_id": "TASKS-PM-001-20260812",
+    "version": "1.0.0",
+    "author": "PM-001",
+    "created": "2026-08-12",
+    "project": "AI三支一扶学习导师 v2.0 重构",
+    "exam_target": "河南2026三支一扶 8月22日重考",
+    "total_tasks": 26,
+    "p0_count": 15,
+    "p1_count": 11,
+    "p2_count": 0
+  },
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "项目结构初始化",
+      "description": "创建多Agent学习导师完整目录结构。包括：server/（后端代码）、static/（前端资源）、data/（数据目录）、scripts/（工具脚本）、templates/（模板）、config/（配置文件）。创建 config.yaml 集中管理端口、飞书密钥路径、数据目录路径等配置。创建 .env.example。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 1,
+      "depends_on": [],
+      "blocks": ["T-002", "T-003", "T-004", "T-005"],
+      "acceptance_criteria": [
+        "目录结构符合 AGENTS.md 规范",
+        "config.yaml 可被Python解析，包含 port/data_dir/feishu_config_path 等核心配置项",
+        ".env.example 不含真实密钥",
+        "README.md 含项目说明和启动步骤"
+      ]
+    },
+    {
+      "id": "T-002",
+      "title": "模块化API服务器搭建",
+      "description": "基于 Flask 或 FastAPI 搭建模块化后端。拆分为：app.py（入口+路由注册）、api/knowledge.py（知识卡API）、api/quiz.py（题库API）、api/mastery.py（掌握度API）、api/push.py（飞书推送API）、api/overview.py（总览API）。每个API模块独立文件。health check端点返回服务状态。所有API返回JSON，设置CORS头。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 3,
+      "depends_on": ["T-001"],
+      "blocks": ["T-006", "T-010", "T-016", "T-021"],
+      "acceptance_criteria": [
+        "python server/app.py 可启动，默认监听 :8899",
+        "GET /api/health 返回 {\"status\":\"ok\",\"goal_id\":\"henan-szyf-20260822\"}",
+        "所有API响应含 Access-Control-Allow-Origin:* 头部",
+        "404/500错误返回标准JSON: {\"error\":\"...\"}",
+        "每个API模块文件 < 300行"
+      ]
+    },
+    {
+      "id": "T-003",
+      "title": "旧版数据迁移脚本",
+      "description": "编写数据迁移脚本，将旧版 ~/hermes-study-mentor/ 下的数据复制/转换为新系统格式。包括：goal.yaml → data/goals/、knowledge-cards/ → data/knowledge-cards/、quiz-bank/ → data/quiz-bank/、mastery.json → data/mastery/、daily-plan/ → data/daily-plan/、templates/ → templates/。检查路径存在性，输出迁移日志。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 1.5,
+      "depends_on": ["T-001"],
+      "blocks": ["T-007", "T-011"],
+      "acceptance_criteria": [
+        "python scripts/migrate_data.py 执行后 data/ 目录下包含 goals/ knowledge-cards/ quiz-bank/ mastery/ daily-plan/",
+        "迁移后知识卡数量 = 旧版知识卡数量（13张）",
+        "迁移后题目数量 = 旧版题目数量（15题）",
+        "迁移日志输出到 stdout，含成功/失败统计"
+      ]
+    },
+    {
+      "id": "T-004",
+      "title": "知识卡读取API实现",
+      "description": "实现知识卡相关API端点：GET /api/knowledge-cards（列表，含title/module/path/size/preview），GET /api/knowledge-card?path=xxx（单卡详情，含完整Markdown内容），GET /api/summary（跨卡汇总，提取H2标题+关键术语+表格统计）。支持按module筛选。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-001", "T-002"],
+      "blocks": ["T-006"],
+      "acceptance_criteria": [
+        "GET /api/knowledge-cards 返回所有13张知识卡列表",
+        "GET /api/knowledge-cards?module=时政热点 仅返回3张时政类知识卡",
+        "GET /api/knowledge-card?path=时政热点/xxx.md 返回完整Markdown内容和元数据",
+        "GET /api/summary 返回跨卡汇总",
+        "空数据情况返回空数组 [], 不报500"
+      ]
+    },
+    {
+      "id": "T-005",
+      "title": "知识卡质量评分引擎",
+      "description": "将旧版 server.py 中 score_knowledge_card() 函数独立为评分引擎。10维度评分（满分100）：字数(10)/知识点章节(15)/表格(15)/口诀(15)/考情分析(10)/来源标注(5)/结构化(5)/重点标记(5)/分值关联(10)/例题(10)。提供 GET /api/quality 全量质量报告和 GET /api/quality?card=xxx 单卡评分。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-001", "T-002"],
+      "blocks": ["T-006"],
+      "acceptance_criteria": [
+        "GET /api/quality 返回所有知识卡评分列表，含 average_score / quality_level / cards",
+        "GET /api/quality?card=xxx 返回单卡各维度得分和总分",
+        "评分逻辑与旧版一致，≥80=优秀, 55-79=良好, 30-54=一般, <30=待完善",
+        "评分细节数组可解释加分/扣分原因"
+      ]
+    },
+    {
+      "id": "T-006",
+      "title": "中国风Web看板：总览+知识卡浏览",
+      "description": "实现中国风Web看板 v1.0。包括：总览仪表盘——考试倒计时、模块掌握度概览、知识卡/题库/计划统计卡片；知识卡浏览页——按模块分组折叠/展开，卡片显示标题/预览/质量星级（基于评分），点击查看完整内容（Markdown渲染为HTML）。风格：水墨画背景、卷轴边框、朱砂红强调色、宣纸底色。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 4,
+      "depends_on": ["T-002", "T-004", "T-005"],
+      "blocks": ["T-019"],
+      "acceptance_criteria": [
+        "platform.html 在浏览器中正常加载，无JS报错",
+        "总览页显示倒计时天数（8/22 - 今天 = 正确天数）",
+        "知识卡按模块分组，点击模块展开卡片列表",
+        "每张知识卡显示星级（基于/quality API评分≥80→5星）",
+        "点击知识卡在右侧渲染Markdown全文，保留表格/加粗/列表格式",
+        "配色方案：墨色(#2c2c2c)文字、朱砂(#c43a31)强调、宣纸(#f5f0e8)背景"
+      ]
+    },
+    {
+      "id": "T-007",
+      "title": "题库读取API实现",
+      "description": "实现题库相关API端点：GET /api/quiz-summary（题库概况），GET /api/questions（获取所有题目，支持?module=&type=&difficulty=&mode=筛选）。mode支持：all/random/wrong/weak。返回题目含完整五段式解析。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-002", "T-003"],
+      "blocks": ["T-008"],
+      "acceptance_criteria": [
+        "GET /api/quiz-summary 返回 {total: 15, quizzes: [...]}",
+        "GET /api/questions 返回所有15题（按源文件分批）",
+        "GET /api/questions?module=时政热点&type=单选题 仅返回符合条件的题",
+        "GET /api/questions?difficulty=5 仅返回难度≥5的题",
+        "解析字段 explanation 包含五个标准段落"
+      ]
+    },
+    {
+      "id": "T-008",
+      "title": "中国风Web看板：练题交互页",
+      "description": "实现练题交互页面。用户选择模块/题型/难度/数量 → 加载题目 → 逐题作答 → 提交查看五段式解析。功能：选项按钮（A/B/C/D/E），提交后显示正确答案（绿底）和用户答案比对；五段式解析分块展示；底部有“下一题”按钮，进度条显示当前题号/总题数。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 3,
+      "depends_on": ["T-006", "T-007"],
+      "blocks": ["T-012"],
+      "acceptance_criteria": [
+        "练题页可选择模块（下拉框，从/api/questions动态获取可选模块）",
+        "可选择题目数量（15/30/50/全部）",
+        "每道题显示题干+选项，点击选项后自动提交",
+        "提交后显示五段式解析，正确答案绿底高亮，错误答案红底标记",
+        "“下一题”按钮滚动到下一题，进度条更新",
+        "多选/不定项题支持多选项选择，显示警告提示"
+      ]
+    },
+    {
+      "id": "T-009",
+      "title": "五段式解析完整性验证",
+      "description": "实现解析格式自动检查器。验证每道题的explanation字段是否包含5个必要段落：正确答案、术语拆解、选项辨析、考情提示、记忆口诀。提供 GET /api/parse-check 端点：返回缺失段落报告，标注哪些题不完整。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 1,
+      "depends_on": ["T-007"],
+      "blocks": ["T-012"],
+      "acceptance_criteria": [
+        "可自动检测5个段落是否存在（按关键标记匹配）",
+        "返回缺失详情: {\"question_id\":\"xxx\", \"missing_segments\":[\"术语拆解\",\"记忆口诀\"]}",
+        "支持批量检查和单题检查",
+        "检查不依赖顺序，按关键词匹配即可"
+      ]
+    },
+    {
+      "id": "T-010",
+      "title": "掌握度数据模型与API",
+      "description": "实现12模块掌握度追踪系统。数据模型：module → {mastery(0-100), trend(up/down/flat), total(答题总数), correct_rate(0-1), weak(bool)}。API端点：GET /api/mastery（获取全量掌握度），POST /api/mastery/update（提交答题结果，更新对应模块掌握度）。掌握度计算公式：mastery = min(100, correct_rate × 100)，weak = mastery < 40 OR correct_rate < 0.5。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-001", "T-002", "T-003"],
+      "blocks": ["T-020"],
+      "acceptance_criteria": [
+        "GET /api/mastery 返回12模块掌握度对象，含mastery/trend/total/correct_rate/weak",
+        "POST /api/mastery/update 接收 {module: str, correct: bool}，更新后mastery.json写入磁盘",
+        "初始值：所有模块 mastery=0, trend=flat, weak=false",
+        "答题后：mastery = correct_rate*100, weak自动计算",
+        "mastery.json 持久化到 data/mastery/ 目录"
+      ]
+    },
+    {
+      "id": "T-011",
+      "title": "每日学习计划API",
+      "description": "读取 data/daily-plan/ 下的每日计划Markdown文件。API端点：GET /api/daily-plans（列表），GET /api/daily-plan?date=2026-08-13（单日计划），GET /api/daily-plan?today（今日计划自动匹配）。返回Markdown内容和结构化元数据（日期、标题、距考天数）。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.0",
+      "estimated_hours": 1,
+      "depends_on": ["T-002", "T-003"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "GET /api/daily-plans 返回8/13-8/22共10天计划列表",
+        "GET /api/daily-plan?today 自动返回当天日期的计划",
+        "计划内容完整，含情报关注/知识学习/仿真练题/错题复盘/晚间计划5个板块"
+      ]
+    },
+    {
+      "id": "T-012",
+      "title": "答题记录与错题本",
+      "description": "实现答题记录系统和错题本功能。每次练题后记录：用户答案、正确答案、是否答对、答题时间、题目ID。API端点：POST /api/answer-record（提交单题答题记录），GET /api/wrong-questions（获取错题列表，按模块/时间筛选），GET /api/answer-stats（答题统计：总题数、正确率、各模块正确率）。数据存储为JSON文件。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 2,
+      "depends_on": ["T-008", "T-009"],
+      "blocks": ["T-013", "T-020"],
+      "acceptance_criteria": [
+        "POST /api/answer-record 接收答题记录并持久化",
+        "GET /api/wrong-questions 返回所有错题列表，可按module筛选",
+        "GET /api/wrong-questions?module=时政热点 仅返回时政错题",
+        "GET /api/answer-stats 返回 {total, correct, rate, by_module: {...}}",
+        "数据持久化到 data/progress/answer-records.json"
+      ]
+    },
+    {
+      "id": "T-013",
+      "title": "练题模式增强：随机/错题重做/薄弱强化",
+      "description": "在练题页面上增加练题模式选择。模式包括：顺序练题、随机练题、错题重做、薄弱模块强化。前端增加模式选择UI，后端对应 ?mode=sequential|random|wrong|weak 参数。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 2,
+      "depends_on": ["T-012"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "练题页顶部显示模式选择（4个按钮/下拉）",
+        "随机模式：题目顺序每次不同",
+        "错题重做模式：仅抽取出错过且未再次做对的题",
+        "薄弱强化模式：优先选择weak=true模块的题目",
+        "模式切换后重新加载题目，保留筛选条件"
+      ]
+    },
+    {
+      "id": "T-014",
+      "title": "中国风看板：掌握度追踪页",
+      "description": "实现掌握度可视化页面。p5.js绘制：雷达图——12模块掌握度六边形；进度条——各模块mastery百分比横向条；趋势指示——up/down/flat箭头；薄弱模块红色高亮标记。数据源自 GET /api/mastery。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 3,
+      "depends_on": ["T-006", "T-010"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "雷达图/进度条展示12模块掌握度",
+        "薄弱模块(weak=true)以朱砂红色高亮",
+        "鼠标悬停模块名称显示：mastery/correct_rate/total",
+        "数据从/api/mastery实时获取，页面加载和练题后自动刷新"
+      ]
+    },
+    {
+      "id": "T-015",
+      "title": "跨知识卡/题库全文搜索",
+      "description": "实现搜索功能。GET /api/search?q=关键词 返回匹配的知识卡和题目。知识卡搜索title+content，题目搜索stem+explanation。返回结果含来源类型、标题、摘要片段。前端搜索框在顶部导航栏。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 2,
+      "depends_on": ["T-004", "T-007", "T-006"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "输入“政府工作报告”可搜到知识卡和题目结果",
+        "搜索结果分类显示：知识卡(N) / 题目(M)",
+        "点击知识卡结果跳转到知识卡详情页",
+        "点击题目结果跳转到练题页并定位该题",
+        "空搜索返回空数组"
+      ]
+    },
+    {
+      "id": "T-016",
+      "title": "飞书推送系统：Token管理与消息发送",
+      "description": "实现飞书推送核心功能。包括：飞书Token管理——获取 tenant_access_token（缓存2h，过期自动刷新）；消息构建——interactive消息格式（blue header + markdown内容）；发送API——POST到飞书IM API。提供 POST /api/push/test 手动测试推送。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-001", "T-002"],
+      "blocks": ["T-017"],
+      "acceptance_criteria": [
+        "从 config.yaml 或 .env 读取 FEISHU_APP_ID/FEISHU_APP_SECRET/FEISHU_HOME_CHANNEL",
+        "token获取成功，2h内不重复获取",
+        "POST /api/push/test 发送测试消息到飞书，收到 message_id",
+        "消息格式：blue模板header + 距考天数 + 时政要点 + 学习建议 + PC链接",
+        "密钥不在代码中硬编码，不出现在日志中"
+      ]
+    },
+    {
+      "id": "T-017",
+      "title": "飞书推送：动态内容生成+Cron自动化",
+      "description": "基于KM-001提供的内容模板，实现三次推送的差异化内容。早间：报名/准考证提醒+今日计划摘要+今日时政方向；午间：上午政策动态+午间练题建议；晚间：全天汇总+明日预告+错题统计。配置 GitHub Actions Cron（3次/日）或本地任务计划。",
+      "assigned_to": "TA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-016"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "早间推送含今日计划摘要（从daily-plan读取）",
+        "午间推送含练题建议",
+        "晚间推送含全天汇总+错题统计",
+        "Cron定时触发（或提供手动触发方式）",
+        "推送脚本可直接运行: python scripts/push_daily.py [morning|noon|evening]"
+      ]
+    },
+    {
+      "id": "T-018",
+      "title": "知识库数据导入：zhangongji-data.js解析",
+      "description": "编写从 zhangongji-data.js (523KB) 导入题目的脚本。该文件为JS格式的题库数据，需解析为标准的 quiz JSON 格式（type/stem/options/answer/explanation/module/difficulty）。解析后题目纳入题库。目标：题库总量达到100+题。",
+      "assigned_to": "TA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 3,
+      "depends_on": ["T-003", "T-007"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "python scripts/import_zhangongji.py 成功解析JS数据",
+        "导入题目数 > 0（至少100+题目标）",
+        "每道题有完整type/stem/options/answer/module字段",
+        "导入后题库总题数在 /api/quiz-summary 中更新",
+        "解析脚本处理JS格式兼容性（中文属性名、单引号等）"
+      ]
+    },
+    {
+      "id": "T-019",
+      "title": "QA-001: 核心框架功能验收",
+      "description": "对TA-001在V1.0 Sprint中交付的全部产出进行功能验收。包括：启动服务、测试全部API端点、验证中国风看板、检查旧版数据迁移完整性、测试飞书推送。产出验收报告（通过/不通过/有条件通过 + Bug清单）。",
+      "assigned_to": "QA-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 3,
+      "depends_on": ["T-006", "T-008", "T-016", "T-017"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "server/app.py 启动无报错",
+        "全部 /api/* 端点返回200（或正确的404/400）",
+        "knowledge-cards 含13张",
+        "questions 含15+题",
+        "mastery.json 可读写",
+        "飞书测试消息发送成功",
+        "中国风看板在Chrome/Edge中正常渲染",
+        "验收报告含通过/不通过/阻塞项，Bug按严重级别分级"
+      ]
+    },
+    {
+      "id": "T-020",
+      "title": "QA-001: V1.1增强功能验收",
+      "description": "对TA-001在V1.1 Sprint中交付的功能进行验收。包括：错题本、练题模式切换、掌握度可视化、搜索功能、题库导入。",
+      "assigned_to": "QA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 2,
+      "depends_on": ["T-012", "T-013", "T-014", "T-015", "T-018"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "错题本功能正常：提交错误答案后可在/wrong-questions检索到",
+        "练题模式切换正常：4种模式均可加载正确题目",
+        "掌握度图表正确渲染，数据与/api/mastery一致",
+        "搜索返回知识卡和题目的匹配结果",
+        "题库导入后总体题量增加"
+      ]
+    },
+    {
+      "id": "T-021",
+      "title": "KM-001: 已有知识卡内容审核",
+      "description": "对旧版13张知识卡进行10维度质量评分。逐张审核：字数是否达标、知识点章节是否≥4、表格是否含对比结构、是否有记忆口诀、是否有考情分析、来源是否标注、是否有结构化列表、是否有加粗重点标记、是否有分值关联、是否有例题。给出每张卡的得分和改进建议。不达标的（<80分）标注需修正的具体段落。",
+      "assigned_to": "KM-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 3,
+      "depends_on": ["T-002", "T-003"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "13张知识卡全部完成10维度评分",
+        "每张卡有分维度得分明细和改进建议",
+        "达标率报告：≥80分X张 / 55-79分Y张 / <55分Z张",
+        "不达标卡列出具体缺失项",
+        "所有评分可复核，有评分依据"
+      ]
+    },
+    {
+      "id": "T-022",
+      "title": "KM-001: 题库内容质量审核",
+      "description": "审核现有15道题目的内容质量。检查维度：五段式解析是否完整、答案是否正确、选项是否有明显排除项、考情提示是否与河南考试相关、记忆口诀是否押韵易记、时政题数据是否与2025-2026考纲一致、判断题干是否有歧义。给出逐题评分和改进建议。",
+      "assigned_to": "KM-001",
+      "priority": "P0",
+      "sprint": "V1.0",
+      "estimated_hours": 2,
+      "depends_on": ["T-002", "T-003"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "15题全部审核完毕",
+        "五段式解析完整率报告（5/5、4/5等）",
+        "答案正确性验证（引用来源确认）",
+        "考情提示是否针对河南三支一扶",
+        "题目按模块/题型/难度统计审核结果"
+      ]
+    },
+    {
+      "id": "T-023",
+      "title": "KM-001: 情报推送内容模板设计",
+      "description": "为早/午/晚三次飞书推送设计内容模板。早间模板：距考天数+报名/准考证提醒+今日计划摘要+今日时政方向关键词；午间模板：午间时政快讯+推荐练题模块；晚间模板：全天时政汇总+错题统计+明日预告。每个模板用Markdown格式，含固定框架和动态变量。",
+      "assigned_to": "KM-001",
+      "priority": "P1",
+      "sprint": "V1.0",
+      "estimated_hours": 1.5,
+      "depends_on": ["T-016"],
+      "blocks": ["T-017"],
+      "acceptance_criteria": [
+        "三份模板（早/午/晚）各有差异化内容",
+        "每份模板含距考倒计时",
+        "动态变量用 {变量名} 标记，TA-001可直接替换",
+        "模板复用旧版格式（interactive消息blue header）",
+        "内容不涉及编造数据，仅提取已有情报"
+      ]
+    },
+    {
+      "id": "T-024",
+      "title": "KM-001: 知识卡覆盖分析",
+      "description": "审核现有知识卡对各模块的覆盖情况。旧版13张知识卡覆盖10个模块，需确认：毛泽东思想、地理科技等模块是否有卡覆盖。对缺失模块提出补卡建议（知识点大纲+推荐来源）。",
+      "assigned_to": "KM-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 1,
+      "depends_on": ["T-021"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "列出12模块的知识卡覆盖矩阵",
+        "标注缺失模块和需补充的知识点",
+        "每个缺失模块提供5-8个知识点大纲",
+        "推荐可信来源（新华社/人民日报/人民出版社教材）"
+      ]
+    },
+    {
+      "id": "T-025",
+      "title": "QA-001: 代码质量审查",
+      "description": "对TA-001所有产出代码进行静态审查。包括：代码规范（PEP8/命名规范）、安全检查（密钥泄漏、路径遍历、XSS风险）、错误处理完整性、模块化程度评估。产出代码审查报告。不修改代码，仅报问题。",
+      "assigned_to": "QA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 1.5,
+      "depends_on": ["T-019"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "所有Python文件检查完毕",
+        "检查是否有机密信息硬编码（飞书密钥等）",
+        "检查API是否有基本的错误处理和输入验证",
+        "报告含严重/警告/建议三级问题"
+      ]
+    },
+    {
+      "id": "T-026",
+      "title": "最终集成测试与上线确认",
+      "description": "在所有V1.0+V1.1任务完成后，进行端到端集成测试。模拟用户完整学习流程：打开看板→查看计划→浏览知识卡→做15道题→查看解析→查看掌握度变化→收到飞书推送。确认所有环节畅通，出具上线确认报告。",
+      "assigned_to": "QA-001",
+      "priority": "P1",
+      "sprint": "V1.1",
+      "estimated_hours": 2,
+      "depends_on": ["T-020", "T-022", "T-025"],
+      "blocks": [],
+      "acceptance_criteria": [
+        "完整用户流程“打开看板→浏览知识卡→练题→看掌握度→飞书推送”全通路无阻塞",
+        "所有P0任务全部通过",
+        "所有P1任务有条件通过即可（标注已知限制）",
+        "旧版server.py可安全关闭/备份",
+        "上线确认报告含: 通过功能清单/已知限制/回滚方案"
+      ]
+    }
+  ],
+  "dependency_graph": {
+    "description": "任务依赖关系图（拓扑排序）",
+    "levels": [
+      {"level": 0, "tasks": ["T-001"], "description": "基础设施层：项目结构"},
+      {"level": 1, "tasks": ["T-002", "T-003"], "description": "核心服务层：API框架 + 数据迁移"},
+      {"level": 2, "tasks": ["T-004", "T-005", "T-007", "T-009", "T-010", "T-011", "T-016"], "description": "业务逻辑层：知识卡/题库/掌握度/搜索/推送引擎"},
+      {"level": 3, "tasks": ["T-006", "T-008", "T-017", "T-018", "T-021", "T-022", "T-023"], "description": "前端展示 + 推送脚本 + 内容审核"},
+      {"level": 4, "tasks": ["T-012", "T-019"], "description": "答题记录 + 核心验收"},
+      {"level": 5, "tasks": ["T-013", "T-014", "T-015", "T-020", "T-024", "T-025"], "description": "增强功能 + 扩展验收"},
+      {"level": 6, "tasks": ["T-026"], "description": "集成测试与上线"}
+    ]
+  },
+  "sprint_plan": {
+    "V1.0_核心重建": {
+      "dates": "8/12 - 8/14（2天）",
+      "tasks": ["T-001","T-002","T-003","T-004","T-005","T-006","T-007","T-008","T-009","T-010","T-016","T-017","T-019","T-021","T-022","T-023"],
+      "description": "可运行的知识卡+题库+看板+推送MVP",
+      "exit_criteria": "用户可通过浏览器浏览知识卡、做15题、看解析、收到飞书推送"
+    },
+    "V1.1_体验增强": {
+      "dates": "8/15 - 8/17（2天）",
+      "tasks": ["T-011","T-012","T-013","T-014","T-015","T-018","T-020","T-024","T-025"],
+      "description": "错题本+掌握度可视化+搜索+题库扩充",
+      "exit_criteria": "知识卡平均分≥80，题库≥100题，错题可追溯"
+    },
+    "V1.2_冲刺完善": {
+      "dates": "8/18 - 8/21（3天）",
+      "tasks": ["T-026"],
+      "description": "集成测试+上线确认+考前最终验证",
+      "exit_criteria": "全流程畅通，上线"
+    }
+  },
+  "agent_workload": {
+    "TA-001": {
+      "task_count": 18,
+      "estimated_hours": 38.5,
+      "tasks": ["T-001","T-002","T-003","T-004","T-005","T-006","T-007","T-008","T-009","T-010","T-011","T-012","T-013","T-014","T-015","T-016","T-017","T-018"]
+    },
+    "QA-001": {
+      "task_count": 4,
+      "estimated_hours": 8.5,
+      "tasks": ["T-019","T-020","T-025","T-026"]
+    },
+    "KM-001": {
+      "task_count": 4,
+      "estimated_hours": 7.5,
+      "tasks": ["T-021","T-022","T-023","T-024"]
+    }
+  }
+}

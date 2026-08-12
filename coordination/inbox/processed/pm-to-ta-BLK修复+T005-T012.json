@@ -1,0 +1,60 @@
+{
+  "协议版本": "1.0",
+  "说明": "PM-001 任务单：复核并完成 BLK-001/002/003 修复及 T005-T012 功能，产出 ta-修复报告2.md。上一轮(2026-08-12 22:18)已提交 ta-修复报告.md，但状态看板仍显示 BLK 未修复，本单要求 TA-001 重新核验代码实际状态、修复任何回归、确保所有端点可用。",
+
+  "任务ID": "BLK修复+T005-T012",
+  "发件Agent": "PM-001",
+  "收件Agent": "TA-001",
+  "优先级": "P0",
+  "截止时间": "2026-08-12 23:30",
+
+  "任务标题": "复核并完成 BLK-001/002/003 修复 + T005-T012 功能验证",
+  "任务描述": "读取本任务单并执行：\n1. BLK-001: /api/knowledge/card 路径解析500错误 —— 核验 server/api/knowledge.py 中 get_card_detail() 的 relative_to() 是否已修复（上一轮改 kb_dir_resolved）。若已修复则验证；若回归则修复。\n2. BLK-002: /api/quality 404/参数问题 —— 核验是否同时支持 ?path= 和 ?card= 参数且返回10维度评分。\n3. BLK-003: /api/quiz/submit POST 405 —— 核验 POST 方法注册及 answer/user_answer 字段兼容。\n4. T-005~T-012 相关功能核验：知识卡质量评分引擎(10维度满分100)、练题交互五段式解析、错题追踪(data/wrong-questions/)、掌握度实时更新(data/mastery/mastery.json)、知识卡详情接口。\n5. 检查 .bak 备份文件存在（修改前备份）。\n6. 所有修改前先备份原文件（若 .bak 已存在则跳过，但要在报告中说明）。\n7. 修复后启动/重启服务并逐个 curl 验证端点。",
+
+  "输入": {
+    "参考文件": [
+      "coordination/inbox/pm-to-ta-BLK修复+T005-T012.json",
+      "outputs/ta-修复报告.md",
+      "coordination/decisions/状态看板.md",
+      "server/api/knowledge.py",
+      "server/api/quiz.py",
+      "server/api/mastery.py",
+      "server/api/overview.py",
+      "server/api/push.py",
+      "server/app.py",
+      "app.py",
+      "scripts/verify_fixes.py"
+    ],
+    "数据来源": [
+      "data/knowledge-cards/",
+      "data/wrong-questions/",
+      "data/mastery/mastery.json"
+    ]
+  },
+
+  "验收标准": [
+    "1. curl 'http://127.0.0.1:5000/api/knowledge/card?path=<相对路径>.md' 返回 HTTP 200 且含 title 字段",
+    "2. curl 'http://127.0.0.1:5000/api/quality?path=<相对路径>.md' 返回 HTTP 200 且含10维度评分(满分100)",
+    "3. curl -X POST http://127.0.0.1:5000/api/quiz/submit 带 question_id+answer 返回 HTTP 200 + is_correct + 五段式解析",
+    "4. curl http://127.0.0.1:5000/api/health 返回 HTTP 200 且 status=ok",
+    "5. 错题写入 data/wrong-questions/、掌握度更新 data/mastery/mastery.json 被验证",
+    "6. 所有修改文件有 .bak 备份（或说明原有备份）",
+    "7. 产出 outputs/ta-修复报告2.md，含每个端点的 curl 实测结果"
+  ],
+
+  "产出要求": {
+    "文件路径": "outputs/ta-修复报告2.md",
+    "格式": "Markdown",
+    "说明": "格式参照 outputs/ta-修复报告.md：修复概览表 + 每个Bug/任务的根因/修复/curl验证 + 改动文件汇总 + 验收标准对照表"
+  },
+
+  "禁止事项": [
+    "不自行决定要做什么功能（严格按本任务单验收标准执行）",
+    "不在未经PM确认的情况下改变需求范围",
+    "不自行判定任务完成（修复+自测后由 QA-001 验收）",
+    "不做内容质量判断（那是 KM-001 的职责）",
+    "不修改非相关文件（只动 server/api/ 下相关 .py 和备份）",
+    "不要删除已有 .bak 备份文件",
+    "不要伪造 curl 测试结果——必须真实执行命令并粘贴真实输出"
+  ]
+}

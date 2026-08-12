@@ -1,0 +1,22 @@
+{
+  "任务ID": "SPRINTV2-TA",
+  "发件人": "PM-001",
+  "收件人": "TA-001",
+  "标题": "Sprint V2 实施：看板玫红背景修复 + 全页面巡检 + 五字段迁移 + py-fsrs接入 + 脏数据清洗 + 每日计划",
+  "优先级": "P0",
+  "依赖": [],
+  "任务清单": [
+    {"优先级": "🔴", "任务": "修看板玫红背景（platform.html 第1037行 p.background(245,10,93) → 宣纸色/clear），检查雷达图区域可交互有内容"},
+    {"优先级": "🔴", "任务": "全页面可用性巡检（真实浏览器打开 http://localhost:8899/ 逐标签页检查）"},
+    {"优先级": "🟡", "任务": "五字段 Schema 迁移（explanation → correct_answer/term_breakdown/option_analysis/exam_hint/mnemonic，15题脚本一次性迁移）"},
+    {"优先级": "🟡", "任务": "py-fsrs 接入（pip install fsrs，mastery.json 升级 FSRS 排程，保留兼容字段）"},
+    {"优先级": "🟡", "任务": "mastery.json 脏数据清洗（shizheng/URL编码/test → 对齐 goal.yaml 12模块）"},
+    {"优先级": "🟢", "任务": "每日计划排程（daily-plan/ 空目录，接入 py-fsrs 到期卡自动排程）"}
+  ],
+  "验收标准": [
+    "每项完成即验证：curl API + 真实浏览器打开页面检查渲染",
+    "产出 outputs/ta-修复报告-SprintV2.md（中文，含每项修改文件/验证证据）",
+    "产出 work-logs/active/TA-001-SPRINTV2.md 工作日志"
+  ],
+  "截止": "2026-08-13"
+}
