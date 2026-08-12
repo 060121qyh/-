@@ -62,10 +62,20 @@ def validate_question(q, idx: int, errors: list) -> None:
         v = q[f]
         if v is None or (isinstance(v, str) and not v.strip()):
             errors.append(f"{loc}: 字段 [{f}] 为空")
-    # 五段式字段必须为有效文本（非空且长度≥8，避免占位符）
+    # 五段式字段必须为有效文本（非空 + 含对应标记；correct_answer 短格式为正常）
+    # 口径对齐 KM-001 审核报告 1.1 节：correct_answer 短（7-14字符，如【正确答案】C）为正常格式；
+    # 其余四字段（术语拆解/选项辨析/考情提示/记忆口诀）内容较长，要求长度≥8 防占位符。
+    opts = q.get("options") if isinstance(q.get("options"), dict) else {}
     for f in FIVE_SECTION_FIELDS:
         v = q.get(f, "")
-        if not isinstance(v, str) or len(v.strip()) < 8:
+        if not isinstance(v, str) or not v.strip():
+            errors.append(f"{loc}: 五段式字段 [{f}] 为空")
+            continue
+        if f == "correct_answer":
+            # 须含「正确答案」标记与至少一个答案字母（如【正确答案】C / 【正确答案】ABD）
+            if "【正确答案】" not in v or not any(c in v for c in opts):
+                errors.append(f"{loc}: 五段式字段 [correct_answer] 须含「正确答案」标记与答案字母")
+        elif len(v.strip()) < 8:
             errors.append(f"{loc}: 五段式字段 [{f}] 内容过短/无效")
     # type
     if q.get("type") not in VALID_TYPES:
@@ -97,10 +107,12 @@ def validate_question(q, idx: int, errors: list) -> None:
             for c in ans:
                 if c in opts and (not isinstance(opts[c], str) or not opts[c].strip()):
                     errors.append(f"{loc}: 正确答案 {c} 内容为空")
-    # explanation 应包含五段式各段标题
+    # explanation 应包含五段式各段标题（前缀匹配：兼容「【术语拆解——逐字解释…】」类带修饰语标题）
     exp = q.get("explanation", "")
+    exp_lines = [ln.strip() for ln in exp.splitlines()] if exp else []
     for tag in ["【正确答案】", "【术语拆解】", "【选项辨析】", "【考情提示】", "【记忆口诀】"]:
-        if tag not in exp:
+        tag_core = tag[:-1]  # 去掉右括号】，如「【术语拆解」
+        if not any(ln.startswith(tag_core) for ln in exp_lines):
             errors.append(f"{loc}: explanation 缺少段标题 [{tag}]")
 
 
