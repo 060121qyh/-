@@ -19,3 +19,4 @@ __pycache__/
 
 # ============ Hermes Agent 本地配置 ============
 .hermes/
+*.bak*
