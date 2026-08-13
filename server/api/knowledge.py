@@ -5,6 +5,7 @@ server/api/knowledge.py — 知识卡API
 import os
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, jsonify, request, current_app
 
@@ -26,7 +27,8 @@ def _list_cards():
         return []
 
     cards = []
-    for md_file in sorted(kb_dir.rglob("*.md")):
+    # REQ-20260813-003：按文件 mtime（更新时间）倒序排序，最新在前（替代原文件名字母序）
+    for md_file in sorted(kb_dir.rglob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True):
         rel_path = md_file.relative_to(kb_dir)
         module = str(rel_path.parent) if str(rel_path.parent) != "." else "未分类"
         title = rel_path.stem
@@ -54,6 +56,8 @@ def _list_cards():
             "module": module,
             "path": str(rel_path).replace("\\", "/"),
             "size": size,
+            # REQ-20260813-003：返回本地时间格式化的更新时间（YYYY-MM-DD HH:MM）
+            "update_time": datetime.fromtimestamp(md_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
             "preview": preview,
         })
 

@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>赛博导师 · 学案</title>
 
+<!-- PWA（REQ-20260813-004）：manifest + 主题色 + 图标，全部相对路径（适配 /-/ 前缀与 localhost） -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#4f7cff">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
@@ -320,6 +326,68 @@ body::before {
   font-family: var(--serif);
   font-size: 18px;
   flex-shrink: 0;
+}
+
+/* ========================================
+   REQ-20260813-003：知识宝库 最新优先 + 历史折叠
+   ======================================== */
+.kb-date-label {
+  font-family: var(--serif);
+  font-size: 12px;
+  color: var(--ink-light);
+  letter-spacing: 2px;
+  padding: 6px 2px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.kb-badge-new {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 7px;
+  border: 1px solid var(--vermillion);
+  color: var(--vermillion);
+  border-radius: 8px;
+  margin-left: 8px;
+  vertical-align: 1px;
+  letter-spacing: 1px;
+  background: rgba(192,57,43,0.06);
+  font-weight: 600;
+}
+.kb-history {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.3);
+}
+.kb-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-light);
+  letter-spacing: 2px;
+  user-select: none;
+  transition: color 0.2s;
+}
+.kb-history-head:hover {
+  color: var(--vermillion);
+}
+.kb-history-arrow {
+  transition: transform 0.25s;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.kb-history.open .kb-history-arrow {
+  transform: rotate(180deg);
+}
+.kb-history-body {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ========================================
@@ -866,6 +934,27 @@ body::before {
 // ========================================
 
 const API_BASE = window.location.origin;  // 自动适配电脑/手机访问
+
+// === 静态数据降级（REQ-20260813-004 任务2：公网版/文件版 API 不可达时读内联数据）===
+// window.STATIC_DATA 由 scripts/build_static_site.py 构建时注入，结构与各 API 响应同构；
+// 本机版（API 正常）不注入该字段，行为与改造前完全一致。
+const STATIC_DATA = window.STATIC_DATA || null;
+let staticMode = false;   // true = 当前运行在静态降级模式（公网 GitHub Pages / file://）
+
+function staticFor(endpoint) {
+  if (!STATIC_DATA) return null;
+  if (endpoint.includes('/api/overview')) return STATIC_DATA.overview;
+  if (endpoint.includes('/api/knowledge/card')) {
+    const m = endpoint.match(/[?&]path=([^&]+)/);
+    const p = m ? decodeURIComponent(m[1]) : '';
+    return (STATIC_DATA.cards && STATIC_DATA.cards[p]) || null;
+  }
+  if (endpoint.includes('/api/quality')) return STATIC_DATA.quality;
+  if (endpoint.includes('/api/knowledge')) return STATIC_DATA.knowledge;
+  if (endpoint.includes('/api/summary')) return STATIC_DATA.summary;
+  if (endpoint.includes('/api/quiz')) return STATIC_DATA.quiz;
+  return null;
+}
 let overviewData = null;
 let currentTab = 'overview';
 let p5Instance = null;
@@ -897,9 +986,13 @@ async function fetchAPI(endpoint) {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    staticMode = false;
     return await res.json();
   } catch (err) {
     console.error(`API 错误: ${endpoint}`, err);
+    // REQ-20260813-004：API 不可达 → 自动降级读静态数据（公网/文件版）
+    const s = staticFor(endpoint);
+    if (s) { staticMode = true; return s; }
     return null;
   }
 }
@@ -914,7 +1007,7 @@ async function init() {
   }
   const d = overviewData;
   document.getElementById('header-subtitle').textContent =
-    `备考中  ·  距考 ${d.days_remaining} 天`;
+    `备考中  ·  距考 ${d.days_remaining} 天${staticMode ? '  ·  📡 静态镜像模式' : ''}`;
   document.getElementById('card-count-badge').textContent = d.knowledge_cards.total;
   renderTab('overview');
 }
@@ -1160,6 +1253,11 @@ async function renderKnowledge(container) {
       if (Array.isArray(kData.cards)) cards = kData.cards;
     }
   } catch(e) {}
+  // 静态降级：API 不可达时读内联数据
+  if (cards.length === 0) {
+    const sk = staticFor('/api/knowledge');
+    if (sk && Array.isArray(sk.cards)) cards = sk.cards;
+  }
   if (cards.length === 0 && Array.isArray(overviewData.knowledge_cards)) {
     cards = overviewData.knowledge_cards;
   }
@@ -1173,6 +1271,11 @@ async function renderKnowledge(container) {
       qData.cards.forEach(c => { qualityMap[c.path] = c; });
     }
   } catch(e) {}
+  // 静态降级：质量评分
+  if (Object.keys(qualityMap).length === 0) {
+    const sq = staticFor('/api/quality');
+    if (sq && Array.isArray(sq.cards)) sq.cards.forEach(c => { qualityMap[c.path] = c; });
+  }
 
   container.innerHTML = `
     <div class="section-header">
@@ -1198,6 +1301,36 @@ async function renderKnowledge(container) {
   });
 }
 
+const moduleIcons = {
+  '时政热点': '📰', '中国特色社会主义理论': '🏛️', '马克思主义哲学': '📖',
+  '毛泽东思想': '⭐', '中共党史': '🚩', '三农与乡村振兴': '🌾',
+  '法律': '⚖️', '经济常识': '💰', '地理科技': '🌍',
+  '历史人文': '🏺', '公文写作': '✍️', '河南省情': '🏠'
+};
+
+function cardItemHtml(c, qualityMap, isNewest) {
+  const q = qualityMap[c.path];
+  const scoreHtml = q ? `<span style="font-size:11px;padding:1px 6px;border-radius:8px;margin-left:6px;
+    ${q.score >= 80 ? 'background:rgba(192,57,43,0.12);color:var(--vermillion);' :
+      q.score >= 55 ? 'background:rgba(212,160,23,0.12);color:var(--ochre);' :
+      'background:rgba(140,123,107,0.1);color:var(--ink-faint);'}
+    font-weight:700;">${q.score}分</span>` : '';
+  const warns = q && q.score < 70 ? q.details.filter(d => d.includes('缺少')).slice(0,2).map(d => `<span style="font-size:10px;color:var(--ink-faint);margin-left:4px;">${d.replace('缺少','缺')}</span>`).join('') : '';
+  const newBadge = isNewest ? '<span class="kb-badge-new">🆕 最新</span>' : '';
+  return `
+    <div class="card-item" data-path="${c.path}">
+      <div class="card-icon">${moduleIcons[c.module] || '📄'}</div>
+      <div class="card-info">
+        <div class="card-title">${c.title}${newBadge}${scoreHtml}</div>
+        <div class="card-preview">${c.preview || ''}</div>
+        <div class="card-module">${c.module} · ${(c.size / 1024).toFixed(1)} KB · 📅 ${c.update_time || '未知'} 更新${c.keywords ? ' · ' + c.keywords : ''}${warns}</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </div>
+  `;
+}
+
+// REQ-20260813-003：知识宝库排序——最新优先 + 历史折叠（搜索时全部平铺，折叠组内可搜到）
 function renderCardList(cards, qualityMap) {
   const list = document.getElementById('card-list');
   if (!list) return;
@@ -1205,36 +1338,57 @@ function renderCardList(cards, qualityMap) {
     list.innerHTML = '<div class="empty-state">📭 暂无知识卡</div>';
     return;
   }
-  const moduleIcons = {
-    '时政热点': '📰', '中国特色社会主义理论': '🏛️', '马克思主义哲学': '📖',
-    '毛泽东思想': '⭐', '中共党史': '🚩', '三农与乡村振兴': '🌾',
-    '法律': '⚖️', '经济常识': '💰', '地理科技': '🌍',
-    '历史人文': '🏺', '公文写作': '✍️', '河南省情': '🏠'
-  };
-  list.innerHTML = cards.map(c => {
-    const q = qualityMap[c.path];
-    const scoreHtml = q ? `<span style="font-size:11px;padding:1px 6px;border-radius:8px;margin-left:6px;
-      ${q.score >= 80 ? 'background:rgba(192,57,43,0.12);color:var(--vermillion);' :
-        q.score >= 55 ? 'background:rgba(212,160,23,0.12);color:var(--ochre);' :
-        'background:rgba(140,123,107,0.1);color:var(--ink-faint);'}
-      font-weight:700;">${q.score}分</span>` : '';
-    const warns = q && q.score < 70 ? q.details.filter(d => d.includes('缺少')).slice(0,2).map(d => `<span style="font-size:10px;color:var(--ink-faint);margin-left:4px;">${d.replace('缺少','缺')}</span>`).join('') : '';
-    return `
-      <div class="card-item" data-path="${c.path}">
-        <div class="card-icon">${moduleIcons[c.module] || '📄'}</div>
-        <div class="card-info">
-          <div class="card-title">${c.title}${scoreHtml}</div>
-          <div class="card-preview">${c.preview || ''}</div>
-          <div class="card-module">${c.module} · ${(c.size / 1024).toFixed(1)} KB · ${c.keywords || ''}${warns}</div>
+  const sorted = [...cards].sort((a, b) => (b.update_time || '').localeCompare(a.update_time || ''));
+  // 搜索模式：有输入时全部平铺展示过滤结果，保证命中历史折叠组内卡片也可见
+  const searchBox = document.getElementById('knowledge-search');
+  const isSearch = !!(searchBox && searchBox.value.trim());
+
+  let html = '';
+  if (isSearch) {
+    html = sorted.map(c => cardItemHtml(c, qualityMap, false)).join('');
+  } else {
+    // 按日期分组（YYYY-MM-DD），最新日期在前
+    const groups = {};
+    sorted.forEach(c => {
+      const d = (c.update_time || '').slice(0, 10) || '未知日期';
+      (groups[d] = groups[d] || []).push(c);
+    });
+    const dates = Object.keys(groups).sort().reverse();
+    const newestDate = dates[0];
+    // 顶部：最近更新区（最新日期的卡平铺 + 🆕 最新徽标）
+    html += `<div class="kb-date-label">🆕 最近更新 · ${newestDate}</div>`;
+    html += groups[newestDate].map(c => cardItemHtml(c, qualityMap, true)).join('');
+    // 下方：历史资料折叠组（较早日期的卡收纳）
+    const olderDates = dates.slice(1);
+    if (olderDates.length > 0) {
+      const olderCards = olderDates.flatMap(d => groups[d]);
+      html += `
+        <div class="kb-history" id="kb-history">
+          <div class="kb-history-head" onclick="toggleHistory(this)">
+            <span>📜 历史资料（${olderCards.length}）</span>
+            <span class="kb-history-arrow">▾</span>
+          </div>
+          <div class="kb-history-body" style="display:none;">
+            ${olderCards.map(c => cardItemHtml(c, qualityMap, false)).join('')}
+          </div>
         </div>
-        <div class="card-arrow">→</div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }
+  }
+  list.innerHTML = html;
 
   list.querySelectorAll('.card-item').forEach(item => {
     item.addEventListener('click', () => loadKnowledgeCard(item.dataset.path));
   });
+}
+
+function toggleHistory(head) {
+  const wrap = head.closest('.kb-history');
+  if (!wrap) return;
+  const body = wrap.querySelector('.kb-history-body');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  wrap.classList.toggle('open', !open);
 }
 
 async function loadKnowledgeCard(path) {
@@ -1331,6 +1485,11 @@ async function renderQuiz(container) {
         else if (data && Array.isArray(data.questions)) quizQuestions = data.questions;
       }
     } catch(e) { console.error('加载题库失败:', e); }
+    // 静态降级：API 不可达时读内联题库
+    if (quizQuestions.length === 0) {
+      const sq = staticFor('/api/quiz');
+      if (sq && Array.isArray(sq.questions)) quizQuestions = sq.questions;
+    }
   }
 
   // 练题中 → 显示当前题目
@@ -1553,10 +1712,13 @@ function resetQuiz() {
 async function renderKnowledgeSummary() {
   const container = document.getElementById('main-content');
   container.innerHTML = '<div class="loading">生成考点汇总中...</div>';
-  try {
-    const resp = await fetch(`${API_BASE}/api/summary`);
-    const data = await resp.json();
-    container.innerHTML = `
+  // 静态降级：fetchAPI 内含 API 失败 → 内联数据回退逻辑
+  const data = await fetchAPI('/api/summary');
+  if (!data) {
+    container.innerHTML = '<div class="error-msg">加载失败</div>';
+    return;
+  }
+  container.innerHTML = `
       <div class="section-header">
         <div class="section-title">📋 考点汇总</div>
         <button class="back-btn" onclick="switchTab('knowledge')">← 返回宝库</button>
@@ -1577,9 +1739,14 @@ async function renderKnowledgeSummary() {
         </div>
       `).join('')}
     `;
-  } catch(e) {
-    container.innerHTML = '<div class="error-msg">加载失败</div>';
-  }
+}
+
+// === PWA：Service Worker 注册（REQ-20260813-004 任务3，相对路径适配 /-/ 与 localhost）===
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(e => console.warn('Service Worker 注册失败:', e));
+  });
 }
 
 // === 启动 ===

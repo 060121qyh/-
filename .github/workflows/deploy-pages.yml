@@ -1,0 +1,38 @@
+# ============================================================
+# 看板静态化部署（REQ-20260813-004 任务2）
+# 每日北京时间 07:30（UTC 23:30）自动重编译 + 推送到 gh-pages 分支；
+# 也可在 Actions 页手动触发。零依赖（仅 Python 标准库）。
+# ============================================================
+name: deploy-pages
+
+on:
+  schedule:
+    # UTC 23:30 = 北京时间 07:30（每日早间情报推送后重编译公网版）
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 构建静态站点（知识卡/题库/总览 → static-site/）
+        run: python scripts/build_static_site.py
+
+      - name: 推送 gh-pages 分支（Pages 以 legacy 模式发布该分支）
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./static-site
+          force_orphan: true
+          enable_jekyll: false
