@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛博导师 · 学案</title>
+
+<!-- PWA（REQ-20260813-004）：manifest + 主题色 + 图标，全部相对路径（适配 /-/ 前缀与 localhost） -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#4f7cff">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
+<!-- Libraries -->
+<script src="p5.min.js"></script>
+<script src="marked.min.js"></script>
+
+<style>
+/* ========================================
+   赛博导师 · 学案 — 中国风水墨主题
+   ======================================== */
+
+:root {
+  --paper: #f5f0e8;
+  --paper-dark: #ebe3d5;
+  --ink: #1a1008;
+  --ink-light: #4a3f35;
+  --ink-faint: #8c7b6b;
+  --vermillion: #c0392b;
+  --vermillion-light: #e74c3c;
+  --ochre: #d4a017;
+  --ochre-light: #e8c547;
+  --jade: #5b8c5a;
+  --border: #d4c5b2;
+  --shadow: rgba(26,16,8,0.06);
+  --serif: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  --sans: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --brush: 'Ma Shan Zheng', cursive;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 宣纸纹理 */
+body::before {
+  content: '';
+  position: fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse at 15% 15%, rgba(180,160,130,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 80%, rgba(140,120,100,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 45% 40%, rgba(200,180,150,0.05) 0%, transparent 65%);
+  opacity: 0.7;
+}
+
+/* ========================================
+   顶栏 — 卷轴轴杆
+   ======================================== */
+.top-rod {
+  position: relative; z-index:2;
+  height: 7px;
+  background: linear-gradient(90deg, #6b3410, #8B4513 18%, #A0522D 40%, #CD853F 55%, #A0522D 72%, #8B4513 88%, #6b3410);
+  border-radius: 3px;
+  margin: 8px 20px 0;
+  box-shadow: 0 2px 6px var(--shadow);
+  opacity: 0.7;
+}
+.top-rod::before, .top-rod::after {
+  content: '';
+  position: absolute; top: -2px;
+  width: 14px; height: 11px;
+  background: linear-gradient(180deg, #CD853F, #8B4513);
+  border-radius: 3px;
+}
+.top-rod::before { left: -4px; }
+.top-rod::after { right: -4px; }
+
+/* ========================================
+   头部
+   ======================================== */
+.header {
+  position: relative; z-index:2;
+  text-align: center;
+  padding: 20px 24px 8px;
+}
+.header h1 {
+  font-family: var(--brush);
+  font-size: 38px;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 6px;
+  line-height: 1.2;
+}
+.header .seal {
+  display: inline-block;
+  border: 2px solid var(--vermillion);
+  color: var(--vermillion);
+  padding: 4px 10px;
+  font-family: var(--brush);
+  font-size: 13px;
+  letter-spacing: 3px;
+  transform: rotate(-3deg);
+  opacity: 0.75;
+  margin-left: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.header .subtitle {
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+/* ========================================
+   导航标签栏 — 竹简风格
+   ======================================== */
+.nav-bar {
+  position: relative; z-index:2;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0 20px;
+}
+.nav-tab {
+  padding: 10px 22px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.25s;
+  letter-spacing: 1px;
+  position: relative;
+  background: transparent;
+}
+.nav-tab:hover {
+  color: var(--ink);
+  background: rgba(180,160,130,0.15);
+}
+.nav-tab.active {
+  color: var(--vermillion);
+  background: var(--paper);
+  border-color: var(--border);
+  border-bottom: 2px solid var(--paper);
+  margin-bottom: -1px;
+}
+.nav-tab .badge {
+  display: inline-block;
+  background: var(--vermillion);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-family: var(--sans);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+/* ========================================
+   主内容区
+   ======================================== */
+.main-content {
+  position: relative; z-index:1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+/* ========================================
+   总览面板
+   ======================================== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  backdrop-filter: blur(4px);
+}
+.stat-card .label {
+  font-size: 12px;
+  color: var(--ink-faint);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.stat-card .value.accent {
+  color: var(--vermillion);
+}
+
+/* 掌握度可视化画布 */
+#mastery-canvas-wrap {
+  grid-column: 1 / -1;
+  background: rgba(255,255,255,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#mastery-canvas-wrap canvas {
+  display: block;
+}
+
+/* ========================================
+   知识卡列表
+   ======================================== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 2px;
+}
+.search-box {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.5);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 220px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-box:focus {
+  border-color: var(--vermillion);
+}
+.search-box::placeholder {
+  color: var(--ink-faint);
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-item {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.card-item:hover {
+  border-color: var(--ochre);
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px var(--shadow);
+  transform: translateX(3px);
+}
+.card-item .card-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+.card-item .card-info {
+  flex: 1;
+  min-width: 0;
+}
+.card-item .card-title {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.card-item .card-preview {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-item .card-module {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+.card-item .card-arrow {
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   REQ-20260813-003：知识宝库 最新优先 + 历史折叠
+   ======================================== */
+.kb-date-label {
+  font-family: var(--serif);
+  font-size: 12px;
+  color: var(--ink-light);
+  letter-spacing: 2px;
+  padding: 6px 2px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.kb-badge-new {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 7px;
+  border: 1px solid var(--vermillion);
+  color: var(--vermillion);
+  border-radius: 8px;
+  margin-left: 8px;
+  vertical-align: 1px;
+  letter-spacing: 1px;
+  background: rgba(192,57,43,0.06);
+  font-weight: 600;
+}
+.kb-history {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.3);
+}
+.kb-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-light);
+  letter-spacing: 2px;
+  user-select: none;
+  transition: color 0.2s;
+}
+.kb-history-head:hover {
+  color: var(--vermillion);
+}
+.kb-history-arrow {
+  transition: transform 0.25s;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.kb-history.open .kb-history-arrow {
+  transform: rotate(180deg);
+}
+.kb-history-body {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ========================================
+   知识卡详情（预览窗格）
+   ======================================== */
+.detail-panel {
+  display: none;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 28px;
+  margin-top: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.detail-panel.visible {
+  display: block;
+  animation: fadeSlideIn 0.3s ease;
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.detail-panel .back-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-light);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  background: transparent;
+}
+.detail-panel .back-btn:hover {
+  border-color: var(--vermillion);
+  color: var(--vermillion);
+}
+.detail-panel .detail-meta {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+/* Markdown 渲染后的样式 */
+.rendered-content {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--ink);
+}
+.rendered-content h1 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
+  margin: 20px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+}
+.rendered-content h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 22px 0 10px;
+  color: var(--ink-light);
+}
+.rendered-content h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: var(--vermillion);
+}
+.rendered-content p {
+  margin: 8px 0;
+}
+.rendered-content ul, .rendered-content ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+.rendered-content li {
+  margin: 4px 0;
+}
+.rendered-content strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rendered-content em {
+  color: var(--vermillion);
+  font-style: normal;
+  font-weight: 600;
+}
+.rendered-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 14px;
+}
+.rendered-content th {
+  background: rgba(139,69,19,0.08);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  font-family: var(--serif);
+  font-weight: 700;
+  text-align: left;
+  color: var(--ink);
+}
+.rendered-content td {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+}
+.rendered-content code {
+  background: rgba(139,69,19,0.06);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+.rendered-content blockquote {
+  border-left: 3px solid var(--ochre);
+  margin: 12px 0;
+  padding: 8px 16px;
+  background: rgba(212,160,23,0.06);
+  border-radius: 0 4px 4px 0;
+  color: var(--ink-light);
+}
+.rendered-content hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* ========================================
+   每日计划
+   ======================================== */
+.plan-timeline {
+  position: relative;
+  padding-left: 28px;
+  border-left: 2px solid var(--border);
+}
+.plan-day {
+  position: relative;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.plan-day:hover {
+  border-color: var(--ochre);
+  background: rgba(255,255,255,0.8);
+}
+.plan-day::before {
+  content: '';
+  position: absolute;
+  left: -35px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  background: var(--paper);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+}
+.plan-day.today::before {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  box-shadow: 0 0 0 4px rgba(192,57,43,0.15);
+}
+.plan-day .plan-date {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.plan-day.today .plan-date {
+  color: var(--vermillion);
+}
+.plan-day .plan-title {
+  font-size: 15px;
+  color: var(--ink-light);
+}
+
+/* ========================================
+   练题工坊
+   ======================================== */
+.quiz-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+.quiz-empty .brush-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* ========================================
+   底部卷轴
+   ======================================== */
+.bottom-rod {
+  position: relative; z-index:2;
+  height: 7px;
+  background: linear-gradient(90deg, #6b3410, #8B4513 18%, #A0522D 40%, #CD853F 55%, #A0522D 72%, #8B4513 88%, #6b3410);
+  border-radius: 3px;
+  margin: 0 20px 16px;
+  opacity: 0.7;
+}
+.bottom-rod::before, .bottom-rod::after {
+  content: '';
+  position: absolute; top: -2px;
+  width: 14px; height: 11px;
+  background: linear-gradient(180deg, #CD853F, #8B4513);
+  border-radius: 3px;
+}
+.bottom-rod::before { left: -4px; }
+.bottom-rod::after { right: -4px; }
+
+/* ========================================
+   Loading / 状态
+   ======================================== */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  letter-spacing: 2px;
+}
+.error-msg {
+  text-align: center;
+  padding: 20px;
+  color: var(--vermillion);
+  font-size: 13px;
+}
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+/* 响应式 */
+@media (max-width: 720px) {
+  .overview-grid { grid-template-columns: 1fr; }
+  .nav-tab { padding: 8px 14px; font-size: 13px; }
+  .header h1 { font-size: 28px; }
+}
+
+/* ========================================
+   模块进度条
+   ======================================== */
+.module-bars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+.module-bar-item {
+  padding: 2px 0;
+}
+.module-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-light);
+  margin-bottom: 2px;
+}
+.module-bar-label span:first-child {
+  font-family: var(--serif);
+  letter-spacing: 1px;
+}
+.module-bar-pct {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.module-bar-track {
+  height: 6px;
+  background: rgba(139,69,19,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.module-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  min-width: 2%;
+}
+.module-bar-fill.bar-low { background: linear-gradient(90deg, #d4c5b2, #c4a882); }
+.module-bar-fill.bar-mid { background: linear-gradient(90deg, #d4a017, #c0851a); }
+.module-bar-fill.bar-high { background: linear-gradient(90deg, #c0392b, #a33024); }
+
+@media (max-width: 720px) {
+  .module-bars-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ========================================
+   练题工坊 — 交互
+   ======================================== */
+.quiz-start-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+.quiz-start-screen .quiz-icon {
+  font-size: 52px;
+  display: block;
+  margin-bottom: 10px;
+}
+.quiz-start-screen h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.quiz-start-screen p {
+  color: var(--ink-faint);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.quiz-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.quiz-filter-tag {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+  color: var(--ink-light);
+  transition: all 0.2s;
+  font-family: var(--serif);
+  letter-spacing: 1px;
+}
+.quiz-filter-tag:hover { border-color: var(--vermillion); color: var(--vermillion); }
+.quiz-filter-tag.active { background: var(--vermillion); color: #fff; border-color: var(--vermillion); }
+.quiz-btn {
+  padding: 12px 36px;
+  background: var(--vermillion);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quiz-btn:hover { background: var(--vermillion-light); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(192,57,43,0.2); }
+.quiz-btn:disabled { background: var(--ink-faint); cursor: not-allowed; transform: none; }
+
+/* 答题界面 */
+.quiz-session { animation: fadeSlideIn 0.3s ease; }
+.quiz-progress-bar {
+  height: 4px;
+  background: rgba(139,69,19,0.08);
+  border-radius: 2px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.quiz-progress-fill {
+  height: 100%;
+  background: var(--vermillion);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.quiz-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.quiz-q-num {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--vermillion);
+  letter-spacing: 1px;
+}
+.quiz-q-module {
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.quiz-stem {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.7;
+  margin-bottom: 18px;
+  color: var(--ink);
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-option {
+  padding: 14px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quiz-option:hover { border-color: var(--ochre); background: rgba(255,255,255,0.8); }
+.quiz-option.selected { border-color: var(--vermillion); background: rgba(192,57,43,0.06); }
+.quiz-option.correct { border-color: var(--jade); background: rgba(91,140,90,0.08); }
+.quiz-option.wrong { border-color: var(--vermillion); background: rgba(192,57,43,0.08); }
+.quiz-option.disabled { pointer-events: none; opacity: 0.7; }
+.quiz-option-letter {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  color: var(--ink-light);
+}
+.quiz-option.selected .quiz-option-letter { border-color: var(--vermillion); color: var(--vermillion); background: rgba(192,57,43,0.1); }
+.quiz-option.correct .quiz-option-letter { border-color: var(--jade); color: var(--jade); background: rgba(91,140,90,0.1); }
+.quiz-option.wrong .quiz-option-letter { border-color: var(--vermillion); color: var(--vermillion); background: rgba(192,57,43,0.1); }
+.quiz-explanation {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(212,160,23,0.06);
+  border-left: 3px solid var(--ochre);
+  border-radius: 0 6px 6px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-light);
+  display: none;
+  white-space: pre-line;
+}
+.quiz-explanation.visible { display: block; animation: fadeSlideIn 0.3s ease; }
+.quiz-explanation strong { color: var(--vermillion); font-weight: 700; }
+.quiz-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.quiz-nav-btn {
+  padding: 10px 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--serif);
+  font-size: 14px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+  color: var(--ink-light);
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.quiz-nav-btn:hover { border-color: var(--vermillion); color: var(--vermillion); }
+.quiz-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 结果页 */
+.quiz-result { text-align: center; padding: 30px 20px; animation: fadeSlideIn 0.4s ease; }
+.quiz-result .score-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--vermillion);
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--vermillion);
+  margin-bottom: 16px;
+}
+.quiz-result .score-detail { font-size: 14px; color: var(--ink-faint); margin-bottom: 8px; }
+.quiz-result .wrong-list { text-align: left; max-width: 600px; margin: 20px auto 0; }
+.quiz-result .wrong-item {
+  padding: 10px 14px;
+  margin: 8px 0;
+  background: rgba(192,57,43,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.quiz-result .wrong-item:hover { border-color: var(--vermillion); }
+</style>
+</head>
+<body>
+
+<!-- 卷轴上轴杆 -->
+<div class="top-rod"></div>
+
+<!-- 头部 -->
+<div class="header">
+  <h1>赛博导师 · 学案<span class="seal">学案</span></h1>
+  <div class="subtitle" id="header-subtitle">加载中...</div>
+</div>
+
+<!-- 导航标签 -->
+<nav class="nav-bar" id="nav-bar">
+  <button class="nav-tab active" data-tab="overview">学案总览</button>
+  <button class="nav-tab" data-tab="knowledge">知识宝库<span class="badge" id="card-count-badge">0</span></button>
+  <button class="nav-tab" data-tab="plan">每日计划</button>
+  <button class="nav-tab" data-tab="quiz">练题工坊</button>
+</nav>
+
+<!-- 主内容区 -->
+<div class="main-content" id="main-content">
+  <!-- 动态填充 -->
+</div>
+
+<!-- 卷轴下轴杆 -->
+<div class="bottom-rod"></div>
+
+<script>window.STATIC_DATA = {"generated_at": "2026-08-21 23:50:43", "mode": "static", "overview": {"status": "ok", "goal_id": "henan-szyf-20260822", "exam_date": "2026-08-22", "days_remaining": 0, "knowledge_cards": {"total": 11, "modules": {"时政热点": 3, "马克思主义哲学": 1, "河南省情": 1, "经济常识": 1, "法律": 1, "公文写作": 1, "三农与乡村振兴": 1, "中国特色社会主义理论": 1, "中共党史": 1}}, "quiz_bank": {"total_questions": 49}, "mastery": {"modules": {}, "weak_modules": [], "recommended_focus": ""}, "mastery_summary": {"total_modules": 0, "weak_modules": 0, "recommended_focus": ""}, "daily_plans": [{"date": "2026-08-13", "title": "2026-08-13 学习计划（距考试 9 天）"}], "modules": ["三农与乡村振兴", "中共党史", "中国特色社会主义理论", "公文写作", "时政热点", "河南省情", "法律", "经济常识", "马克思主义哲学"]}, "knowledge": {"total": 11, "cards": [{"title": "中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点", "module": "时政热点", "path": "时政热点/中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点.md", "size": 12959, "update_time": "2026-08-21 23:50", "preview": "> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。2025年中央一号文件《中共中央 国务院关于进一步深化农村改革 扎实推进乡村全面振兴的意见》于 **2025年2月23日** 由新华社受权发布，是党的十八大以来**第13个**指导\"三农\"工作的中央一号文件、2004年以来**连续第22年**聚焦\"三农\"。文件以\"**两个持续、四个着力**\"为总框架，**"}, {"title": "2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点", "module": "时政热点", "path": "时政热点/2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点.md", "size": 13505, "update_time": "2026-08-21 23:50", "preview": "> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。2025年政府工作报告由国务院总理李强于 **2025年3月5日** 在 **十四届全国人大三次会议** 上作报告，3月11日闭幕时表决通过。报告由 **2024年工作回顾** 与 **2025年工作部署** 两大板块构成，其中\"2025年主要预期目标\"是**单选数字题**的稳定题源，几乎年年必考 1 题"}, {"title": "唯物论·辩证法·认识论·历史唯物主义核心考点", "module": "马克思主义哲学", "path": "马克思主义哲学/唯物论·辩证法·认识论·历史唯物主义核心考点.md", "size": 4739, "update_time": "2026-08-21 23:50", "preview": "- 模块：马克思主义哲学 - 来源：马克思主义哲学原理（高等教育出版社统编教材）；《马克思主义哲学十讲》（中宣部理论局）；恩格斯《路德维希·费尔巴哈和德国古典哲学的终结》 - 可信度：高（马克思主义经典著作和统编教材，任何高校图书馆可查） - 可考点：是 - 知识点数量：14 个核心考点 ## 📌 摘要 马克思主义哲学（马哲）是公基考试中占比大、考题固定的模块。本卡按「唯物论→辩证法→认识论→历史"}, {"title": "河南省地理·历史·文化·经济核心概况", "module": "河南省情", "path": "河南省情/河南省地理·历史·文化·经济核心概况.md", "size": 2824, "update_time": "2026-08-21 23:50", "preview": "- 模块：河南省情 - 来源：河南省人民政府网站 (henan.gov.cn)；《河南年鉴》；河南省统计局公开数据 - 可信度：高（官方公开数据和政府网站，可查证） - 可考点：是（三支一扶地域特色考点） - 知识点数量：8 个核心考点 ## 📌 摘要 河南省情是三支一扶考试中体现地域特色的模块。本卡覆盖河南的地理、历史、文化、经济基本概况。 ## 🎯 核心考点 1. **基本概况**：河南省简称"}, {"title": "宏观经济·微观经济·社会主义市场经济核心考点", "module": "经济常识", "path": "经济常识/宏观经济·微观经济·社会主义市场经济核心考点.md", "size": 2916, "update_time": "2026-08-21 23:50", "preview": "- 模块：经济常识 - 来源：马克思主义政治经济学原理（高等教育出版社）；《经济学原理》曼昆（北京大学出版社中译本）；中国政府网政策文件 - 可信度：高（高校统编教材和官方政策文件，可查证） - 可考点：是 - 知识点数量：10 个核心考点 ## 📌 摘要 经济常识在公基考试中约占 3-5 题，以基本概念和政策理解为主。本卡覆盖马克思主义政治经济学基础和现代市场经济核心概念。 ## 🎯 核心考点 "}, {"title": "宪法·刑法·民法·行政法核心考点", "module": "法律", "path": "法律/宪法·刑法·民法·行政法核心考点.md", "size": 5584, "update_time": "2026-08-21 23:50", "preview": "- 模块：法律 - 来源：中华人民共和国宪法（2018修正）、中华人民共和国刑法（2020修正）、中华人民共和国民法典（2021施行）、中华人民共和国行政处罚法（2021修订） - 可信度：高（法律原文，全国人大官网可查） - 可考点：是 - 知识点数量：15 个核心考点 ## 📌 摘要 法律模块在三支一扶《公共基础知识》考试中属于必考内容。本卡涵盖宪法、刑法、民法、行政法四大部门法的核心概念，所"}, {"title": "2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编", "module": "时政热点", "path": "时政热点/2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编.md", "size": 16169, "update_time": "2026-08-21 23:50", "preview": "> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。覆盖 2024年7月—2025年12月 期间对考试最有价值的中央会议与重要讲话精神：**二十届三中全会（2024.7）**、**2024年12月中央经济工作会议**、**2024年12月中央农村工作会议**、**2025年全国两会（政府工作报告）**、**2025年中央一号文件**、**抗战胜利80周年纪"}, {"title": "公文格式·行文规则·常用文种核心考点", "module": "公文写作", "path": "公文写作/公文格式·行文规则·常用文种核心考点.md", "size": 3067, "update_time": "2026-08-21 23:50", "preview": "- 模块：公文写作 - 来源：《党政机关公文处理工作条例》（中办发〔2012〕14号）；《党政机关公文格式》GB/T 9704-2012（国家标准） - 可信度：高（中共中央办公厅、国务院办公厅联合发布的国家标准和条例，公开可查） - 可考点：是 - 知识点数量：10 个核心考点 ## 📌 摘要 公文写作在公基考试中属于独立模块，知识点高度标准化（有国家标准），考题以「是什么」「怎么用」为主。所有"}, {"title": "粮食安全·耕地保护·乡村振兴核心政策考点", "module": "三农与乡村振兴", "path": "三农与乡村振兴/粮食安全·耕地保护·乡村振兴核心政策考点.md", "size": 2864, "update_time": "2026-08-21 23:50", "preview": "- 模块：三农与乡村振兴 - 来源：历年中央一号文件（中国政府网公开发布）；《中华人民共和国乡村振兴促进法》（2021年施行）；《中华人民共和国粮食安全保障法》（2024年施行） - 可信度：高（全国人大立法和国务院政策文件，中国政府网可查） - 可考点：是（三支一扶核心考点） - 知识点数量：10 个核心考点 ## 📌 摘要 三农模块是三支一扶考试的重中之重——因为你未来的工作岗位就在基层农村。"}, {"title": "习近平新时代中国特色社会主义思想核心考点", "module": "中国特色社会主义理论", "path": "中国特色社会主义理论/习近平新时代中国特色社会主义思想核心考点.md", "size": 4919, "update_time": "2026-08-21 23:50", "preview": "- 模块：中国特色社会主义理论 - 来源：党的二十大报告（2022年10月）；《习近平谈治国理政》第一至四卷；《习近平新时代中国特色社会主义思想学习纲要》（中宣部编）；十九届六中全会《关于党的百年奋斗重大成就和历史经验的决议》 - 可信度：高（党中央正式文件和官方出版物，新华网/人民网可查） - 可考点：是 - 知识点数量：12 个核心考点 ## 📌 摘要 中特理论是公基时政部分的重中之重。本卡覆"}, {"title": "建党·长征·抗战·建国重大事件与会议核心考点", "module": "中共党史", "path": "中共党史/建党·长征·抗战·建国重大事件与会议核心考点.md", "size": 3383, "update_time": "2026-08-21 23:50", "preview": "- 模块：中共党史 - 来源：《中国共产党简史》（人民出版社、中共党史出版社）；《中国共产党的一百年》（中共党史出版社）；《关于若干历史问题的决议》（1945）、《关于建国以来党的若干历史问题的决议》（1981）、《关于党的百年奋斗重大成就和历史经验的决议》（2021） - 可信度：高（党中央批准的正式党史著作和决议，全国新华书店有售） - 可考点：是 - 知识点数量：12 个核心考点 ## 📌 "}]}, "quality": {"total_cards": 11, "average_score": 58.2, "quality_level": "良好", "cards": [{"title": "中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点", "module": "时政热点", "path": "时政热点/中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点.md", "score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(15节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "word_count": 5087}, {"title": "2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点", "module": "时政热点", "path": "时政热点/2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点.md", "score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(12节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "word_count": 5353}, {"title": "2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编", "module": "时政热点", "path": "时政热点/2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编.md", "score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(13节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "word_count": 6490}, {"title": "建党·长征·抗战·建国重大事件与会议核心考点", "module": "中共党史", "path": "中共党史/建党·长征·抗战·建国重大事件与会议核心考点.md", "score": 56, "level": "良好", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 15, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "含记忆口诀(+15)", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1277}, {"title": "唯物论·辩证法·认识论·历史唯物主义核心考点", "module": "马克思主义哲学", "path": "马克思主义哲学/唯物论·辩证法·认识论·历史唯物主义核心考点.md", "score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1598}, {"title": "宪法·刑法·民法·行政法核心考点", "module": "法律", "path": "法律/宪法·刑法·民法·行政法核心考点.md", "score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 2103}, {"title": "习近平新时代中国特色社会主义思想核心考点", "module": "中国特色社会主义理论", "path": "中国特色社会主义理论/习近平新时代中国特色社会主义思想核心考点.md", "score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1691}, {"title": "河南省地理·历史·文化·经济核心概况", "module": "河南省情", "path": "河南省情/河南省地理·历史·文化·经济核心概况.md", "score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1128}, {"title": "宏观经济·微观经济·社会主义市场经济核心考点", "module": "经济常识", "path": "经济常识/宏观经济·微观经济·社会主义市场经济核心考点.md", "score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1026}, {"title": "公文格式·行文规则·常用文种核心考点", "module": "公文写作", "path": "公文写作/公文格式·行文规则·常用文种核心考点.md", "score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1113}, {"title": "粮食安全·耕地保护·乡村振兴核心政策考点", "module": "三农与乡村振兴", "path": "三农与乡村振兴/粮食安全·耕地保护·乡村振兴核心政策考点.md", "score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "word_count": 1052}]}, "cards": {"时政热点/中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点.md": {"title": "中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点", "module": "时政热点", "path": "时政热点/中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点.md", "content": "# 中共中央 国务院关于进一步深化农村改革 扎实推进乡村全面振兴的意见（2025年中央一号文件）考点\n\n> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。2025年中央一号文件《中共中央 国务院关于进一步深化农村改革 扎实推进乡村全面振兴的意见》于 **2025年2月23日** 由新华社受权发布，是党的十八大以来**第13个**指导\"三农\"工作的中央一号文件、2004年以来**连续第22年**聚焦\"三农\"。文件以\"**两个持续、四个着力**\"为总框架，**首次提出\"农业新质生产力\"**，是\"十四五\"收官之年与巩固拓展脱贫攻坚成果**五年过渡期收官之年**的\"三农\"工作总纲。本卡按\"定位→框架→底线→粮食→脱贫→产业→建设→治理→改革→科技→对照表→考情→口诀→例题\"结构组织，内容对应 **2025年** 版本（不存在\"2026年中央一号文件\"表述——年份混淆已修正）。\n\n---\n\n## 一、文件定位与基本信息\n\n| 项目 | 内容 |\n|------|------|\n| 文件全称 | 《中共中央 国务院关于**进一步深化农村改革 扎实推进乡村全面振兴**的意见》 |\n| 发布时间 | **2025年2月23日**（新华社受权发布） |\n| 文件序号 | 党的十八大以来第**13**个指导\"三农\"工作的中央一号文件 |\n| 连续年限 | 2004年以来**连续第22年**聚焦\"三农\"主题 |\n| 时代坐标 | \"十四五\"规划收官之年；巩固拓展脱贫攻坚成果同乡村振兴有效衔接**五年过渡期收官之年** |\n| 总框架 | \"**两个持续、四个着力**\"，全文共**六个部分** |\n\n> ⚠️ **易错点**：2025年一号文件主题是\"**进一步深化农村改革、扎实推进乡村全面振兴**\"，关键词是\"**改革**\"；单选题常考\"文件主题-发布年份\"对应，务必按年份记忆。\n\n---\n\n## 二、总框架：\"两个持续、四个着力\"\n\n| 框架 | 内容 | 对应部分 |\n|------|------|---------|\n| 持续① | 持续增强**粮食等重要农产品供给保障能力** | 第一部分 |\n| 持续② | 持续**巩固拓展脱贫攻坚成果** | 第二部分 |\n| 着力① | 着力**壮大县域富民产业** | 第三部分 |\n| 着力② | 着力**推进乡村建设** | 第四部分 |\n| 着力③ | 着力**健全乡村治理体系** | 第五部分 |\n| 着力④ | 着力**健全要素保障和优化配置体制机制** | 第六部分 |\n\n> 📝 **口诀**：「**两持四着**——粮安、脱贫两持续；产业、建设、治理、要素四着力」→ 压缩为「**粮贫产建治要素**」六字串。\n\n---\n\n## 三、守牢\"两条底线\"（总纲·必背）\n\n- **底线一**：确保**国家粮食安全**\n- **底线二**：确保**不发生规模性返贫致贫**\n- 工作总方针（历年不变）：坚持农业农村**优先发展**，坚持城乡**融合发展**，把**增加农民收入**作为\"三农\"工作的中心任务\n\n> 📝 **口诀**：「**粮安返贫两条线**，农业农村优先干」。\n\n---\n\n## 四、持续增强粮食等重要农产品供给保障能力（粮食安全）\n\n| 考点 | 核心内容 | 题型 |\n|------|---------|------|\n| 粮食产量目标 | 确保粮食产量稳定在**1.4万亿斤以上**（2024年实际产量**1.413万亿斤**，首次迈上1.4万亿斤台阶） | 单选数字题 |\n| 耕地红线 | 严守**18亿亩**耕地红线，坚决遏制耕地\"**非农化**\"、防止\"**非粮化**\" | 单选数字题 |\n| 耕地保护 | 严格耕地**占补平衡**管理，高质量推进高标准农田建设 | 多选表述题 |\n| 单产提升 | 稳定粮食播种面积，主攻**单产和品质提升**，深入推进**新一轮千亿斤粮食产能提升行动** | 多选 |\n| 种业农机 | 深入实施**种业振兴行动**，加快农机装备补短板 | 单选 |\n| 大食物观 | 树立**大农业观、大食物观**，构建多元化食物供给体系（向森林、草原、江河湖海要食物） | 单选/多选 |\n\n> ⚠️ **易错点**：\"1.4万亿斤**以上**\"（目标）与\"1.413万亿斤\"（2024年实际值）勿混淆；官方表述为\"**以上**\"，不要写成\"左右\"。\n\n---\n\n## 五、持续巩固拓展脱贫攻坚成果（防返贫）\n\n- **过渡期背景**：2021—2025年为巩固拓展脱贫攻坚成果同乡村振兴有效衔接的**五年过渡期**，2025年是收官之年\n- 坚决守牢**不发生规模性返贫致贫**底线\n- 健全**防止返贫致贫监测和帮扶机制**，提升监测帮扶效能\n- 统筹研究过渡期后帮扶政策衔接，推动建立**常态化防止返贫致贫机制**\n- 增强脱贫地区和脱贫群众**内生发展动力**\n\n> 💡 **三支一扶视角**：\"帮扶乡村振兴\"岗位的核心职责即参与巩固拓展脱贫攻坚成果，本部分是岗位工作内容与考题的双重重点。\n\n---\n\n## 六、着力壮大县域富民产业（乡村产业）\n\n- **县域富民产业**：以县城为重要载体的新型城镇化建设与乡村产业联动，壮大县域富民产业\n- 发展**乡村特色产业**，做好\"土特产\"文章，拓宽农民增收渠道\n- 做大做强**农产品加工业**，推动农村一二三产业融合发展\n- 培育**农村电商、乡村旅游**等乡村新产业新业态\n- 促进农民**就近就业增收**\n\n> 📝 **口诀**：「**特加融电游**」——特色产业、农产品加工、三产融合、农村电商、乡村旅游。\n\n---\n\n## 七、着力推进乡村建设（\"千万工程\"·和美乡村）\n\n- 深入学习运用\"**千万工程**\"经验（浙江\"千村示范、万村整治\"工程）\n- 持续推进农村**人居环境整治提升**\n- 加快农村**基础设施补短板**（水、电、路、气、网等）\n- 提升农村**公共服务**水平（教育、医疗、养老）\n- 建设**宜居宜业和美乡村**\n- 推进**以县城为重要载体的新型城镇化**，促进县域城乡融合发展\n\n> 📝 **口诀**：「**千万工程治环境，和美乡村补短板**」。\n\n---\n\n## 八、着力健全乡村治理体系（自治法治德治）\n\n- 健全**党组织领导下**的自治、法治、德治相结合的乡村治理体系\n- 坚持和发展新时代\"**枫桥经验**\"：小事不出村、大事不出镇、矛盾不上交\n- 持续推进**移风易俗**，治理高额彩礼、大操大办等突出问题\n- 加强**平安乡村**建设，健全农村矛盾纠纷多元化解机制\n\n---\n\n## 九、着力健全要素保障和优化配置体制机制（改革深化）\n\n| 改革领域 | 核心政策表述 |\n|---------|-------------|\n| 承包地 | 深化承包地**所有权、承包权、经营权\"三权分置\"**改革；有序推进**第二轮土地承包到期后再延长三十年**试点 |\n| 宅基地 | 稳慎推进**农村宅基地制度改革**试点 |\n| 集体土地 | 有序推进**农村集体经营性建设用地入市**改革 |\n| 集体经济 | 发展**新型农村集体经济**，规范农村集体资产（\"三资\"）管理 |\n| 经营体系 | 完善农业经营体系：**家庭经营**为基础、**农民合作社**为纽带、**农业社会化服务**为支撑 |\n\n> ⚠️ **易错点**：土地\"三权分置\" = 所有权（集体）、承包权（农户）、经营权（可流转）；多选题常考\"三权\"组成，勿与\"两权\"（所有权、承包权）混淆。\n\n---\n\n## 十、农业新质生产力与科技创新（2025年首提·必考新词）\n\n- **首次提出**：2025年中央一号文件**首次提出\"农业新质生产力\"**\n- **核心表述**：以**科技创新**引领先进生产要素集聚，**因地制宜发展农业新质生产力**\n- **落点方向**：农业关键核心技术攻关、种业振兴、高端智能农机装备、智慧农业\n\n> 📝 **口诀**：「**科领要素、因地制宜**」——科技引领、要素集聚、因地制宜，农业新质生产力三关键词。\n\n---\n\n## 十一、历年中央一号文件主题对照表（横向记忆）\n\n| 年份 | 文件主题 | 记忆锚点 |\n|------|---------|---------|\n| 2023年 | 做好2023年全面推进乡村振兴重点工作 | 开局部署 |\n| 2024年 | 学习运用\"千万工程\"经验，有力有效推进乡村全面振兴 | \"千万工程\"入题 |\n| **2025年** | **进一步深化农村改革，扎实推进乡村全面振兴** | **改革深化·首提农业新质生产力** |\n\n> 💡 中央一号文件自2004年起连续聚焦\"三农\"，2025年为**第22个**；主题逐年递进，2025年关键词是\"**改革**\"。\n\n---\n\n## 十二、考情分析与分值关联\n\n- **模块权重**：时政热点约占公基总分 **33%**（约33分）；三农与乡村振兴为独立模块，一号文件属于**时政×三农双模块交叉考点**\n- **题量预估**：一号文件相关考点历年出题 **1—2题**，预计占 **2—4分**；\"18亿亩\"\"1.4万亿斤\"等数字题出现概率接近100%\n- **高频考法**：①单选——数字（18亿亩/1.4万亿斤/第13个/2月23日）；②单选——首提概念（农业新质生产力）；③多选——\"两个持续\"\"四个着力\"归类；④不定项——土地改革与乡村治理表述正误\n- **三支一扶关联**：帮扶乡村振兴、支农岗位直接对应本文件内容，属\"岗位相关必背\"\n\n---\n\n## 十三、记忆口诀汇总\n\n| 考点 | 口诀 |\n|------|------|\n| 文件总框架 | 两持四着：粮贫产建治要素 |\n| 两条底线 | 粮安返贫两条线 |\n| 数字三件套 | 18亿亩红线、15.5亿亩永久基本农田、1.4万亿斤粮食 |\n| 农业新质生产力 | 科领要素、因地制宜 |\n| 千万工程/枫桥经验 | 千万治环境，枫桥化矛盾 |\n| 乡村产业五件事 | 特加融电游 |\n\n---\n\n## 十四、配套例题（五段式解析）\n\n### 例题1（单选·数字题）\n**2025年中央一号文件的发布时间是（ ）**\nA. 2025年1月1日　B. 2025年2月23日　C. 2025年3月5日　D. 2025年2月3日\n\n**【正确答案】B**\n**【术语拆解】**\"中央一号文件\"指中共中央、国务院每年发布的第一份文件，2004年起连续聚焦\"三农\"；发布时间与文件序号是单选高频考点。\n**【选项辨析】**B正确：2025年2月23日新华社受权发布；D\"2月3日\"为易混干扰（部分年份一号文件于2月初发布）；C\"3月5日\"是全国人大会议开幕日；A无依据。\n**【考情提示】**\"发布时间 + 文件主题 + 文件序号（第13个）\"三位一体记忆，一号文件考点稳定出题1道。\n**【记忆口诀】**「**二二三**」——2025年一号文件：2月23日。\n\n### 例题2（单选·新概念）\n**2025年中央一号文件首次提出的重要概念是（ ）**\nA. 乡村振兴战略　B. 农业新质生产力　C. 大食物观　D. 千万工程\n\n**【正确答案】B**\n**【术语拆解】**\"新质生产力\"于2023年9月首次提出；\"农业新质生产力\"由2025年一号文件**首次**写入，体现科技要素向农业集聚。\n**【选项辨析】**A\"乡村振兴战略\"2017年党的十九大提出；B正确；C\"大食物观\"为近年持续强调的政策理念，非本文件首提；D\"千万工程\"源自浙江，2024年一号文件即强调\"学习运用千万工程经验\"。\n**【考情提示】**\"首次\"类表述是时政单选题的高频设问词，2025年一号文件的\"首提\"必记：**农业新质生产力**。\n**【记忆口诀】**「**新质生产力下田**——2025一号文件首提农业新质生产力」。\n\n### 例题3（多选·两条底线）\n**2025年中央一号文件强调必须守牢的\"两条底线\"包括（ ）**\nA. 确保国家粮食安全\nB. 确保不发生规模性返贫致贫\nC. 确保18亿亩耕地红线不突破\nD. 确保农民收入稳定增长\n\n**【正确答案】AB**\n**【术语拆解】**\"两条底线\"是\"三农\"政策的统摄性要求：粮食安全（供给端）+ 防止规模性返贫致贫（保障端）。\n**【选项辨析】**A、B正确，为文件明确表述；C\"18亿亩耕地红线\"属于粮食安全项下的具体硬指标，不是\"两条底线\"本身；D\"农民增收\"是中心任务表述，亦非底线。\n**【考情提示】**\"两条底线\"在多选/不定项中常混入粮食安全的具体措施作干扰项，须区分\"总纲性底线\"与\"措施性指标\"。\n**【记忆口诀】**「**粮安+返贫**，两线定乾坤」。\n\n---\n\n## 十五、来源与声明\n\n- **一手来源**：《中共中央 国务院关于进一步深化农村改革 扎实推进乡村全面振兴的意见》（新华社2025年2月23日受权发布，中国政府网全文刊载）\n- **辅助来源**：2024年12月中央农村工作会议报道、国家统计局2024年粮食产量公报（1.413万亿斤）、农业农村部政策解读\n- **待核实**：新一年度中央一号文件发布后，需对照更新最新主题与首提概念（本卡聚焦2025年版本，作为框架规律与方法论模板）\n- **声明**：本卡内容仅作备考学习使用，不构成立场表达；政策表述以官方发布原文为准\n", "size": 12959, "quality": {"score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(15节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "max_score": 100, "word_count": 5087}}, "时政热点/2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点.md": {"title": "2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点", "module": "时政热点", "path": "时政热点/2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点.md", "content": "# 2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点\n\n> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。2025年政府工作报告由国务院总理李强于 **2025年3月5日** 在 **十四届全国人大三次会议** 上作报告，3月11日闭幕时表决通过。报告由 **2024年工作回顾** 与 **2025年工作部署** 两大板块构成，其中\"2025年主要预期目标\"是**单选数字题**的稳定题源，几乎年年必考 1 题。本卡按\"背景→成绩→目标→政策→任务→专题→民生→三农关联→考情→口诀→例题\"结构组织，所有核心数字均可对照报告原文溯源（年份一律为 **2025年**，不存在任何\"2026年\"表述——KM-ISSUE-001 已修正）。\n\n---\n\n## 一、报告基本信息与历史定位\n\n- **报告时间**：2025年3月5日（十四届全国人大三次会议开幕），3月11日闭幕并表决通过\n- **报告人**：国务院总理**李强**\n- **报告性质**：**\"十四五\"规划收官之年**的政府工作报告（\"十四五\"时期为2021—2025年）\n- **报告结构**：①2024年工作回顾；②2025年经济社会发展总体要求、主要预期目标和政策取向；③2025年政府工作任务\n- **备考定位**：政府工作报告是时政题第一高频题源，**目标数字、政策定调词、任务表述**是三大出题方向\n\n---\n\n## 二、2024年工作回顾（已实现数据·反推题源）\n\n> ⚠️ 出题人常把\"2024年实际完成值\"混入\"2025年目标值\"作干扰选项，务必分清两组数字。\n\n| 指标 | 2024年实际完成 | 数据来源 |\n|------|---------------|---------|\n| 国内生产总值（GDP）增长 | **5.0%** | 国家统计局 |\n| 经济总量 | **约134.9万亿元** | 国家统计局 |\n| 粮食产量 | **1.413万亿斤**（首次突破1.4万亿斤大关） | 国家统计局 |\n| 城镇新增就业 | **1256万人** | 人力资源社会保障部 |\n| 居民消费价格（CPI）涨幅 | **0.2%**（低位运行） | 国家统计局 |\n\n> ⚠️ **易错点**：2024年实际GDP增速是\"5.0%\"（已实现），2025年预期目标是\"5%左右\"（计划值）——一实一预期，单选题常混考。\n\n---\n\n## 三、2025年主要预期目标（单选数字题·必背表）\n\n| 指标 | 2025年目标 | 记忆锚点 | 备注 |\n|------|-----------|---------|------|\n| 国内生产总值（GDP）增长 | **5%左右** | GDP五 | 在实际工作中努力争取更好结果 |\n| 城镇新增就业 | **1200万人以上** | 就业一二 | — |\n| 城镇调查失业率 | **5.5%左右** | 失业五五 | — |\n| 居民消费价格（CPI）涨幅 | **2%左右** | CPI二 | 注意：2025年为2%，不是3% |\n| 居民收入增长 | 与经济增长**同步** | 同步 | — |\n| 国际收支 | 保持**基本平衡** | 平衡 | — |\n| 粮食产量 | **1.4万亿斤以上** | 粮食一四 | 三农必考 |\n| 单位国内生产总值能耗 | 降低**3%左右** | 能耗三 | — |\n| 赤字率 | **4%左右** | 赤字四 | **首次突破3%警戒线**，较上年提高1个百分点 |\n| 地方政府专项债券 | **4.4万亿元** | 专项四四 | 比上年增加 |\n| 超长期特别国债 | **1.3万亿元** | 国债一三 | 8000亿\"两重\" + 5000亿\"两新\" |\n| 特别国债（银行注资） | **5000亿元** | 银行五千 | 支持国有大型商业银行补充核心一级资本 |\n\n> 📝 **数字串联口诀**：「GDP五、CPI二、失业五五、就业一二、粮食一四、赤字四、专项四四、国债一三、银行五千」→ 压缩为 **「五二五五·一二一四·四四一三·五千」**。\n\n---\n\n## 四、宏观政策取向（理解类·多选高频）\n\n### 财政政策：**更加积极**\n- 赤字率 **4%左右**，赤字规模约 **5.66万亿元**（财政部预算报告口径），比上年增加\n- 新增地方政府专项债券 **4.4万亿元**\n- 发行超长期特别国债 **1.3万亿元**：**8000亿元** 支持\"两重\"建设（国家重大战略实施和重点领域安全能力建设），**5000亿元** 支持\"两新\"（大规模设备更新和消费品以旧换新）\n- 发行特别国债 **5000亿元** 支持国有大型商业银行补充核心一级资本\n\n### 货币政策：**适度宽松**\n- 自2011年以来货币政策取向**首次**由\"稳健\"调整为\"适度宽松\"（2024年12月中央经济工作会议定调，本报告落实）\n- 保持流动性充裕，推动社会综合融资成本**稳中有降**\n\n> 📝 **口诀**：「**财积极、币宽松**，双松组合稳增长；两重两新八加五，特别国债补银行」。\n> 📝 多选题常考定调词：\"更加积极的财政政策 + 适度宽松的货币政策\"必须成对记忆。\n\n---\n\n## 五、2025年重点任务（多选题最爱）\n\n报告部署的**八项重点任务**（多选题几乎必有一两个选项出自此表）：\n\n1. **大力提振消费、提高投资效益**，全方位扩大国内需求 ← 首位任务\n2. **因地制宜发展新质生产力**，加快建设现代化产业体系\n3. **深入实施科教兴国战略**，提升国家创新体系整体效能\n4. **推动标志性改革举措落地见效**，扩大高水平对外开放\n5. **有效防范化解重点领域风险**，牢牢守住不发生系统性风险底线\n6. **扎实推进乡村全面振兴**，促进城乡融合发展 ← **三支一扶关联度最高**\n7. **加大区域战略实施力度**，增强区域发展活力\n8. **协同推进降碳减污扩绿增长**，加快经济社会发展全面绿色转型\n\n> 📝 **口诀**：「**内新科改、防乡区绿**」——内需、新质、科教、改革、防险、乡村、区域、绿色，八项任务按序记。\n\n---\n\n## 六、新质生产力专题（新增热点·极可能考）\n\n- **首次提出**：2023年9月习近平总书记在黑龙江考察时首次提出\"新质生产力\"\n- **定义**：创新起主导作用，摆脱传统经济增长方式、生产力发展路径，具有**高科技、高效能、高质量**特征，符合新发展理念的先进生产力质态\n- **核心标志**：**全要素生产率大幅提升**\n- **报告表述**：开展\"**人工智能+**\"行动；推动**商业航天、低空经济**等新兴产业安全健康发展；培育**生物制造、量子科技、具身智能、6G**等未来产业\n- **三支一扶可能考查角度**：单选题问\"新质生产力的核心标志是什么\"→ 全要素生产率大幅提升\n\n> 📝 **口诀**：「**三高两摆脱，一标全要素**」——高科技、高效能、高质量；摆脱传统增长方式、摆脱传统发展路径；核心标志 = 全要素生产率大幅提升。\n\n---\n\n## 七、民生保障关键词（单选细节题）\n\n| 领域 | 报告关键表述 |\n|------|-------------|\n| **就业** | 城镇新增就业1200万人以上；突出做好高校毕业生、农民工、退役军人等重点群体就业 |\n| **教育** | 推进义务教育**优质均衡**发展，扩大**高中阶段教育学位**供给 |\n| **医疗** | 促进优质医疗资源**扩容下沉**；居民医保人均财政补助标准**再提高30元** |\n| **养老** | 城乡居民基础养老金月最低标准**再提高20元**；积极发展**银发经济** |\n| **住房** | 因城施策调减限制性措施，持续用力推动房地产市场**止跌回稳**，保交房 |\n| **社会保障** | 提高退休人员基本养老金；健全灵活就业人员社保制度 |\n\n> 📝 **口诀**：「**就教医养房保**」——就业、教育、医疗、养老、住房、社保，六大民生领域一串记。\n\n---\n\n## 八、三农与三支一扶专项关联（高概率考点）\n\n报告中与基层服务、乡村振兴直接相关的关键表述（多选题常考\"下列属于报告关于'三农'表述的是\"）：\n\n- 巩固拓展脱贫攻坚成果，**坚决守住不发生规模性返贫致贫底线**\n- 扎实推进乡村全面振兴，**促进城乡融合发展**\n- 发展**乡村特色产业**，拓宽农民增收渠道\n- 学习运用\"千万工程\"经验，建设**宜居宜业和美乡村**\n- 稳定粮食播种面积，确保粮食产量稳定在**1.4万亿斤以上**\n- 引导人才向基层和艰苦边远地区流动，健全乡村治理体系\n\n> 💡 **三支一扶视角**：\"帮扶乡村振兴\"岗位的工作内容与上述表述高度重合，此题源几乎必考，建议全部背熟。\n\n---\n\n## 九、考情分析与分值关联\n\n- **时政模块权重**：近五年真题中政治时政合计占比约 **64%**，其中**时政热点约33%**（满分100分约合33分），是公基第一大模块\n- **报告题量**：政府工作报告相关考点历年稳定出题 **1—3题**（单选为主，偶见多选/不定项），预计占 **2—5分**\n- **高频考法**：①单选——目标数字（GDP/CPI/失业率/就业/粮食）；②单选——政策定调词（积极财政/宽松货币）；③多选——八项重点任务归类；④不定项——三农表述正误判断\n- **命题规律**：\"2024年实际完成值 vs 2025年预期目标值\"混考是最高频陷阱\n\n---\n\n## 十、记忆口诀汇总\n\n| 考点 | 口诀 |\n|------|------|\n| 预期目标数字 | 五二五五·一二一四·四四一三·五千（GDP5/CPI2/失业5.5/就业1200万/粮食1.4万亿斤/赤字4%/专项4.4万亿/国债1.3万亿/特别国债5000亿） |\n| 宏观政策定调 | 财积极、币宽松，双松组合稳增长 |\n| 八项重点任务 | 内新科改、防乡区绿 |\n| 新质生产力 | 三高两摆脱，一标全要素 |\n| 民生六领域 | 就教医养房保 |\n| 报告结构 | 回顾加部署，目标政策任务三步走 |\n\n---\n\n## 十一、配套例题（五段式解析）\n\n### 例题1（单选·数字题）\n**2025年《政府工作报告》提出的国内生产总值增长预期目标是（ ）**\nA. 4.5%左右　B. 5%左右　C. 5.5%左右　D. 6%左右\n\n**【正确答案】B**\n**【术语拆解】**\"预期目标\"是政府工作报告对当年经济社会发展的计划性指标，与\"实际完成值\"（统计公报口径）相区别；2025年GDP预期目标为\"5%左右\"。\n**【选项辨析】**A项\"4.5%左右\"无出处；C项\"5.5%左右\"是**城镇调查失业率**的目标值，属张冠李戴；D项\"6%左右\"无依据。B项正确：报告原文\"国内生产总值增长5%左右\"。\n**【考情提示】**\"GDP增速目标\"是政府工作报告单选数字题**第一稳定题源**，出现概率接近100%；注意区分2024年实际5.0%与2025年预期5%左右。\n**【记忆口诀】**「GDP五」——见到增速目标先找\"5%左右\"。\n\n### 例题2（多选·政策定调）\n**下列关于2025年宏观政策取向的表述，正确的有（ ）**\nA. 实施更加积极的财政政策\nB. 实施适度宽松的货币政策\nC. 赤字率拟按4%左右安排\nD. 新增地方政府专项债券3万亿元\n\n**【正确答案】ABC**\n**【术语拆解】**\"更加积极的财政政策\"与\"适度宽松的货币政策\"是2024年12月中央经济工作会议定调、2025年报告落实的\"双宽松\"组合；\"适度宽松\"是2011年以来首次调整。\n**【选项辨析】**A、B正确，为报告政策定调原词；C正确，2025年赤字率拟按4%左右安排，**首次突破3%警戒线**；D错误，专项债为**4.4万亿元**而非3万亿元，数字张冠李戴。\n**【考情提示】**政策定调词是时政多选高频考点，财政与货币必须成对记忆；专项债4.4万亿、超长期特别国债1.3万亿等数字要精确区分。\n**【记忆口诀】**「财积极、币宽松；专项四四、国债一三」。\n\n### 例题3（不定项·三农表述）\n**下列属于2025年《政府工作报告》中关于\"三农\"工作表述的有（ ）**\nA. 坚决守住不发生规模性返贫致贫底线\nB. 扎实推进乡村全面振兴，促进城乡融合发展\nC. 发展乡村特色产业，拓宽农民增收渠道\nD. 确保粮食产量稳定在1.4万亿斤以上\n\n**【正确答案】ABCD**\n**【术语拆解】**\"规模性返贫致贫\"指成规模、成趋势的返贫现象，防止其发生是巩固拓展脱贫攻坚成果的底线要求；\"城乡融合发展\"是乡村振兴的路径支撑。\n**【选项辨析】**四项均为报告原文或核心表述的转写：A为巩固拓展脱贫攻坚成果要求，B为重点任务第六项，C为乡村产业表述，D为粮食安全目标——故全选。\n**【考情提示】**不定项选择题（10题×1.5分）是三支一扶新题型，多选、少选、错选均不得分，**三农表述必须逐字背熟**。\n**【记忆口诀】**「返贫底线、乡村融合、特色产业、一四万亿」——三农四件套全选。\n\n---\n\n## 十二、来源与声明\n\n- **一手来源**：2025年3月5日李强总理在十四届全国人大三次会议上所作《政府工作报告》（2025年3月11日表决通过），中国政府网/新华社全文发布\n- **辅助来源**：国家统计局《2024年国民经济和社会发展统计公报》、财政部《关于2024年中央和地方预算执行情况与2025年中央和地方预算草案的报告》、人力资源社会保障部2024年就业数据\n- **待核实**：赤字规模\"5.66万亿元\"以财政部预算报告公开数为准；2026年3月新一届两会报告发布后，需按同框架对照更新最新目标数字（本卡聚焦2025年版本，作为规律训练与方法论模板）\n- **声明**：本卡内容仅作备考学习使用，不构成任何立场表达；数字以官方发布原文为准\n", "size": 13505, "quality": {"score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(12节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "max_score": 100, "word_count": 5353}}, "马克思主义哲学/唯物论·辩证法·认识论·历史唯物主义核心考点.md": {"title": "唯物论·辩证法·认识论·历史唯物主义核心考点", "module": "马克思主义哲学", "path": "马克思主义哲学/唯物论·辩证法·认识论·历史唯物主义核心考点.md", "content": "# 唯物论·辩证法·认识论·历史唯物主义 核心考点（公基马哲模块）\n\n- 模块：马克思主义哲学\n- 来源：马克思主义哲学原理（高等教育出版社统编教材）；《马克思主义哲学十讲》（中宣部理论局）；恩格斯《路德维希·费尔巴哈和德国古典哲学的终结》\n- 可信度：高（马克思主义经典著作和统编教材，任何高校图书馆可查）\n- 可考点：是\n- 知识点数量：14 个核心考点\n\n## 📌 摘要\n\n马克思主义哲学（马哲）是公基考试中占比大、考题固定的模块。本卡按「唯物论→辩证法→认识论→历史唯物主义」四大板块组织，所有概念均出自马克思主义经典著作和高校统编教材。\n\n## 🎯 核心考点\n\n### 一、唯物论\n\n1. **哲学基本问题**\n   - 恩格斯提出：思维和存在的关系问题是哲学的基本问题\n   - 第一方面：思维和存在何者为第一性？→ 划分唯物主义和唯心主义\n   - 第二方面：思维能否正确认识存在？→ 划分可知论和不可知论\n\n2. **物质的哲学定义**\n   - 列宁：「物质是标志客观实在的哲学范畴，这种客观实在是人通过感觉感知的，它不依赖于我们的感觉而存在，为我们的感觉所复写、摄影、反映。」\n   - 物质的唯一特性：客观实在性\n\n3. **物质与意识的辩证关系**\n   - 物质决定意识（唯物论的根本立场）\n   - 意识对物质具有能动反作用（辩证法的体现）\n   - 正确发挥主观能动性必须以尊重客观规律为前提\n\n### 二、辩证法（三大规律 + 五对范畴）\n\n4. **对立统一规律（矛盾规律）——辩证法的实质和核心**\n   - 矛盾的同一性和斗争性：矛盾双方既对立又统一\n   - 矛盾的普遍性和特殊性：共性寓于个性之中\n   - 主要矛盾和次要矛盾、矛盾的主要方面和次要方面\n   - 📝 毛泽东《矛盾论》对此有系统论述\n\n5. **量变质变规律**\n   - 量变是质变的必要准备，质变是量变的必然结果\n   - 度：保持事物质的稳定性的数量界限\n   - 适度原则：掌握分寸、把握火候\n\n6. **否定之否定规律**\n   - 辩证否定：扬弃——既克服又保留\n   - 事物发展是前进性和曲折性的统一\n   - 道路是曲折的，前途是光明的\n\n7. **五对基本范畴**\n   - 原因和结果、必然性和偶然性、可能性和现实性、内容和形式、本质和现象\n\n### 三、认识论\n\n8. **实践是认识的基础**\n   - 实践是认识的来源、动力、检验标准和目的\n   - 实践的观点是马克思主义认识论的首要的和基本的观点\n\n9. **认识的辩证过程**\n   - 感性认识→理性认识→实践（两次飞跃）\n   - 实践、认识、再实践、再认识，循环往复以至无穷\n\n10. **真理的客观性、绝对性和相对性**\n    - 真理是客观的：内容不依赖于主体\n    - 绝对真理和相对真理是辩证统一的\n    - 实践是检验真理的唯一标准\n\n### 四、历史唯物主义\n\n11. **社会存在与社会意识**\n    - 社会存在决定社会意识（历史唯物主义的基本观点）\n    - 社会意识具有相对独立性，对社会存在有反作用\n\n12. **生产力与生产关系**\n    - 生产力决定生产关系，生产关系反作用于生产力\n    - 生产关系一定要适合生产力状况的规律\n\n13. **经济基础与上层建筑**\n    - 经济基础决定上层建筑，上层建筑反作用于经济基础\n    - 上层建筑包括：政治上层建筑（国家政权、法律等）和思想上层建筑（道德、宗教、哲学等）\n\n14. **人民群众是历史的创造者**\n    - 人民群众是社会物质财富和精神财富的创造者\n    - 人民群众是社会变革的决定力量\n    - 杰出人物对历史发展有重大影响，但不能决定历史发展的基本趋势\n\n## 📝 考情提示\n\n- 马哲在公基考试中通常占 **5-8 题**，是除时政外占比最大的模块之一\n- 「对立统一规律」和「实践与认识」是最高频考点\n- 考题常以古诗词、成语、俗语作为题干，考查哲学原理的对应关系\n- 容易混淆的概念：「主要矛盾vs矛盾的主要方面」「量变vs质变」「感性认识vs理性认识」\n\n## 🔗 溯源与验证\n\n- 《马克思主义哲学原理》高等教育出版社——全国高校通用教材，任何大学图书馆可查\n- 《马克思主义哲学十讲》中宣部理论局编著——党建读物出版社，官方出版物\n- 毛泽东《矛盾论》《实践论》——《毛泽东选集》第一卷，人民出版社\n- 以上均为公开出版物，ISBN 可查，内容与考试大纲完全对应\n", "size": 4739, "quality": {"score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1598}}, "河南省情/河南省地理·历史·文化·经济核心概况.md": {"title": "河南省地理·历史·文化·经济核心概况", "module": "河南省情", "path": "河南省情/河南省地理·历史·文化·经济核心概况.md", "content": "# 河南省地理·历史·文化·经济 核心概况（公基河南省情模块）\n\n- 模块：河南省情\n- 来源：河南省人民政府网站 (henan.gov.cn)；《河南年鉴》；河南省统计局公开数据\n- 可信度：高（官方公开数据和政府网站，可查证）\n- 可考点：是（三支一扶地域特色考点）\n- 知识点数量：8 个核心考点\n\n## 📌 摘要\n\n河南省情是三支一扶考试中体现地域特色的模块。本卡覆盖河南的地理、历史、文化、经济基本概况。\n\n## 🎯 核心考点\n\n1. **基本概况**：河南省简称「豫」，省会郑州。总面积约16.7万平方公里，常住人口约9800万（全国第三）。因大部分地区位于黄河以南，故名「河南」。\n\n2. **地理特征**：地势西高东低，西部为山地丘陵（太行山、伏牛山、桐柏山、大别山），东部为黄淮海平原。地跨海河、黄河、淮河、长江四大流域。\n\n3. **历史文化**：中华文明的重要发祥地之一。八大古都河南占其四：洛阳（十三朝古都）、开封（八朝古都）、安阳（殷墟·甲骨文出土地）、郑州（商代都城）。少林寺、龙门石窟为世界文化遗产。\n\n4. **农业大省**：粮食产量连续多年稳定在1300亿斤以上，占全国粮食总产量约1/10，是全国重要的粮食生产基地。小麦产量居全国首位。\n\n5. **郑州航空港经济综合实验区**：国务院批准的首个国家级航空港经济实验区。郑州是国家中心城市。\n\n6. **中原城市群**：以郑州为核心，涵盖洛阳、开封、新乡、焦作、许昌、平顶山、漯河、济源等城市，是国家重点发展的城市群之一。\n\n7. **南水北调中线工程**：从丹江口水库引水，经南阳、平顶山、郑州等地北上至京津。河南是核心水源地和重要受水区。\n\n8. **黄河流域生态保护和高质量发展**：习近平总书记提出重大国家战略。河南是黄河流域重要省份，郑州、洛阳、开封等城市在黄河沿线。\n\n## 📝 考情提示\n\n- 河南省情通常占 1-2 题，重点是地理人文和经济社会发展\n- 「八大古都河南占四」是经典考点\n- 中原城市群、郑州国家中心城市是近年政策热点\n\n## 🔗 溯源\n\n- 河南省人民政府网：https://www.henan.gov.cn/\n- 河南省统计局：https://tjj.henan.gov.cn/\n- 以上数据均可通过官方网站查证\n\n---\n\n### 📌 每日更新 2026-08-13：中共河南省委办公厅事业单位2026年公开...\n- **来源**：http://www.hnrsks.com/sitesources/hnsrskszx/page_pc/zngg/article374d7134ef1a403e8a01ec0b59a05727.html\n- **摘要**：中共河南省委办公厅事业单位2026年公开...\n- **相关度**：8（由 scripts/daily_kb_update.py 自动追加，保留溯源链接）\n", "size": 2824, "quality": {"score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1128}}, "经济常识/宏观经济·微观经济·社会主义市场经济核心考点.md": {"title": "宏观经济·微观经济·社会主义市场经济核心考点", "module": "经济常识", "path": "经济常识/宏观经济·微观经济·社会主义市场经济核心考点.md", "content": "# 宏观经济·微观经济·社会主义市场经济 核心考点（公基经济模块）\n\n- 模块：经济常识\n- 来源：马克思主义政治经济学原理（高等教育出版社）；《经济学原理》曼昆（北京大学出版社中译本）；中国政府网政策文件\n- 可信度：高（高校统编教材和官方政策文件，可查证）\n- 可考点：是\n- 知识点数量：10 个核心考点\n\n## 📌 摘要\n\n经济常识在公基考试中约占 3-5 题，以基本概念和政策理解为主。本卡覆盖马克思主义政治经济学基础和现代市场经济核心概念。\n\n## 🎯 核心考点\n\n1. **商品二因素**：使用价值（自然属性）和价值（社会属性）。使用价值是价值的物质承担者，价值是交换价值的基础。\n\n2. **劳动二重性**：具体劳动创造使用价值，抽象劳动形成价值。这是理解马克思主义政治经济学的枢纽。\n\n3. **货币的五大职能**：价值尺度、流通手段、贮藏手段、支付手段、世界货币。其中价值尺度和流通手段是最基本的职能。\n\n4. **价值规律**：商品价值量由社会必要劳动时间决定，商品交换以价值量为基础实行等价交换。价格围绕价值上下波动是价值规律的表现形式。\n\n5. **市场经济与宏观调控**：市场在资源配置中起决定性作用，更好发挥政府作用。宏观调控目标：经济增长、物价稳定、充分就业、国际收支平衡。\n\n6. **GDP 与 GNP**：GDP（国内生产总值）按国土原则计算；GNP（国民生产总值）按国民原则计算。中国自 2003 年起以 GDP 为核心指标。\n\n7. **财政政策**：政府通过税收和支出调节经济。扩张性（减税+增支）用于刺激经济，紧缩性（增税+减支）用于抑制过热。2025 年中国赤字率 4%，属扩张性财政政策。\n\n8. **货币政策**：央行调节货币供应量和利率。工具：存款准备金率、再贴现率、公开市场操作。2025 年中国货币政策取向由「稳健」转为「适度宽松」。\n\n9. **通货膨胀与通货紧缩**：通胀是物价总水平持续上涨（货币贬值）；通缩是物价总水平持续下跌。CPI（居民消费价格指数）是主要衡量指标。\n\n10. **社会主义市场经济基本制度**：公有制为主体、多种所有制经济共同发展；按劳分配为主体、多种分配方式并存；社会主义市场经济体制。\n\n## 📝 考情提示\n\n- GDP增速目标、赤字率、CPI目标是每年政府工作报告必考数字\n- 「市场起决定性作用」是十八届三中全会提出的重大理论突破\n- 财政政策和货币政策的工具和方向容易混淆\n\n## 🔗 溯源\n\n- 曼昆《经济学原理》——全球通用经济学教材，北大出版社中译本\n- 中国政府网历年《政府工作报告》全文\n- 以上均为公开出版物，可查证\n", "size": 2916, "quality": {"score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1026}}, "法律/宪法·刑法·民法·行政法核心考点.md": {"title": "宪法·刑法·民法·行政法核心考点", "module": "法律", "path": "法律/宪法·刑法·民法·行政法核心考点.md", "content": "# 宪法·刑法·民法·行政法 核心考点（三支一扶公基法律模块）\n\n- 模块：法律\n- 来源：中华人民共和国宪法（2018修正）、中华人民共和国刑法（2020修正）、中华人民共和国民法典（2021施行）、中华人民共和国行政处罚法（2021修订）\n- 可信度：高（法律原文，全国人大官网可查）\n- 可考点：是\n- 知识点数量：15 个核心考点\n\n## 📌 摘要\n\n法律模块在三支一扶《公共基础知识》考试中属于必考内容。本卡涵盖宪法、刑法、民法、行政法四大部门法的核心概念，所有知识点均可在中国人大网 (npc.gov.cn) 法律数据库中查证原文。\n\n## 🎯 核心考点\n\n### 一、宪法\n\n1. **我国的国体与政体**\n   - 国体（国家性质）：人民民主专政的社会主义国家（宪法第1条）\n   - 政体（政权组织形式）：人民代表大会制度（宪法第2条）\n   - 根本政治制度：人民代表大会制度\n   - 基本政治制度：中国共产党领导的多党合作和政治协商制度、民族区域自治制度、基层群众自治制度\n\n2. **公民的基本权利**（宪法第二章）\n   - 平等权（第33条）：公民在法律面前一律平等\n   - 政治权利和自由（第34-35条）：选举权和被选举权、言论/出版/集会/结社/游行/示威自由\n   - 人身自由（第37条）：非经法定程序不受逮捕\n   - 社会经济权利（第42-45条）：劳动权、休息权、社会保障权\n   - 受教育权（第46条）\n\n3. **国家机构**\n   - 全国人大：最高国家权力机关，行使立法权\n   - 国务院：最高国家行政机关\n   - 人民法院：审判机关\n   - 人民检察院：法律监督机关\n\n> 📝 可查证：全文见 http://www.npc.gov.cn/ 宪法专栏\n\n### 二、刑法\n\n4. **刑法的基本原则**\n   - 罪刑法定原则（刑法第3条）：「法无明文规定不为罪，法无明文规定不处罚」\n   - 刑法面前人人平等原则（第4条）\n   - 罪责刑相适应原则（第5条）：刑罚轻重应与罪行和刑事责任相适应\n\n5. **犯罪构成四要件**\n   - 犯罪客体：刑法所保护的社会关系\n   - 犯罪客观方面：危害行为（作为/不作为）、危害结果、因果关系\n   - 犯罪主体：自然人（刑事责任年龄：16岁完全责任/14-16岁八类犯罪/12-14岁特别恶劣经核准）\n   - 犯罪主观方面：故意（直接故意/间接故意）或过失（疏忽大意/过于自信）\n\n6. **正当防卫与紧急避险**（刑法第20-21条）\n   - 正当防卫：为保护合法权益免受正在进行的不法侵害，采取的必要防卫行为，不负刑事责任\n   - 防卫过当：明显超过必要限度造成重大损害，应负刑事责任但应减轻或免除处罚\n   - 特殊防卫：对严重危及人身安全的暴力犯罪，防卫致不法侵害人伤亡的，不负刑事责任\n\n> 📝 可查证：全文见 http://www.npc.gov.cn/ 刑法专栏\n\n### 三、民法（民法典）\n\n7. **民法典的结构**（2021年1月1日施行）\n   - 共7编：总则、物权、合同、人格权、婚姻家庭、继承、侵权责任\n   - 共1260条，是中国第一部以「典」命名的法律\n\n8. **民事主体**\n   - 自然人：从出生到死亡具有民事权利能力\n   - 民事行为能力：完全(≥18岁)、限制(8-18岁)、无(<8岁)\n   - 法人：具有民事权利能力和行为能力，依法独立享有权利和承担义务的组织\n   - 非法人组织：个人独资企业、合伙企业等\n\n9. **合同与侵权**\n   - 合同：民事主体之间设立、变更、终止民事法律关系的协议\n   - 违约责任：继续履行、采取补救措施、赔偿损失\n   - 侵权责任归责原则：过错责任（一般）、无过错责任（法律特别规定）、公平责任\n\n> 📝 可查证：全文见 https://flk.npc.gov.cn/ 民法典\n\n### 四、行政法\n\n10. **行政法的基本原则**\n    - 合法性原则：行政行为必须有法律授权\n    - 合理性原则：行政行为应公平公正、符合理性\n    - 程序正当原则：行政程序中保障相对人的知情权、参与权、救济权\n\n11. **行政处罚的种类**（行政处罚法第9条）\n    - 警告、通报批评\n    - 罚款、没收违法所得、没收非法财物\n    - 暂扣许可证件、降低资质等级、吊销许可证件\n    - 限制开展生产经营活动、责令停产停业、责令关闭、限制从业\n    - 行政拘留\n\n12. **行政复议与行政诉讼**\n    - 行政复议：公民/法人对行政行为不服，向上一级行政机关申请复议\n    - 行政诉讼：公民/法人对行政行为不服，向人民法院提起诉讼\n    - 复议前置：某些案件须先复议才能诉讼（如纳税争议）\n\n## 📝 考情提示\n\n- 法律模块在三支一扶公基中约占 **2-5 题**（单选+多选），虽题量不大但考点固定\n- 宪法和行政法是基层工作最常用的法律知识，考题倾向实务\n- 刑法考点集中在基本原则和犯罪构成\n- 民法典是近年热点，合同和侵权责任考频上升\n- 建议配合中国人大网法律原文学习，确保表述精确\n\n## 🔗 溯源与验证\n\n- 宪法全文：http://www.npc.gov.cn/npc/c505/201803/e87e5ed3734c4e9ba067c8aaf01d5e4a.shtml\n- 刑法全文：http://www.npc.gov.cn/\n- 民法典全文：https://flk.npc.gov.cn/detail2.html?ZmY4MDgxODE3NTJiN2Q0YTAxNzVlYzA1N2YyMjA5N2I%3D\n- 行政处罚法全文：http://www.npc.gov.cn/\n- 以上均为全国人大官网公开法律文本，可直接访问验证\n", "size": 5584, "quality": {"score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 2103}}, "时政热点/2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编.md": {"title": "2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编", "module": "时政热点", "path": "时政热点/2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编.md", "content": "# 2024—2025年重要中央会议与习近平总书记重要讲话精神考点汇编\n\n> 📌 **摘要**：本卡服务河南三支一扶《公共基础知识》备考（2026-08-22 考试）。覆盖 2024年7月—2025年12月 期间对考试最有价值的中央会议与重要讲话精神：**二十届三中全会（2024.7）**、**2024年12月中央经济工作会议**、**2024年12月中央农村工作会议**、**2025年全国两会（政府工作报告）**、**2025年中央一号文件**、**抗战胜利80周年纪念大会（2025.9）**、**二十届四中全会（\"十五五\"规划建议，2025.10）**，以及习近平总书记重要论述金句。全部内容可溯源至新华社、人民日报等官方公开报道；个别暂无法核实的数字标注\"**待核实**\"，绝不编造。**2026年最新时政（2026年两会、2026年中央一号文件等）发布后按同框架更新，见文末更新提示。**\n\n---\n\n## 一、二十届三中全会（2024年7月15日—18日）——进一步全面深化改革\n\n- **会议性质**：党的二十届三中全会，审议通过《中共中央关于**进一步全面深化改革、推进中国式现代化**的决定》\n- **总目标**：继续完善和发展中国特色社会主义制度，推进国家治理体系和治理能力现代化\n- **时间表**：到 **2029年**（中华人民共和国成立80周年）时，完成《决定》提出的改革任务\n- **\"七个聚焦\"**（多选高频）：聚焦构建高水平社会主义市场经济体制；聚焦发展全过程人民民主；聚焦建设社会主义文化强国；聚焦提高人民生活品质；聚焦建设美丽中国；聚焦建设更高水平平安中国；聚焦提高党的领导水平和长期执政能力\n- **\"六个坚持\"**（改革原则）：坚持党的全面领导、坚持以人民为中心、坚持守正创新、坚持以制度建设为主线、坚持全面依法治国、坚持系统观念\n- **改革体量**：提出 **300多项**重要改革举措，以**经济体制改革**为牵引\n\n> 📝 **口诀**：「**七聚焦、六坚持、三百举措、二九交卷**」。\n\n---\n\n## 二、2024年12月中央经济工作会议（12月11日—12日）——定调2025年经济工作\n\n- **会议任务**：总结2024年经济工作，分析当前经济形势，**部署2025年经济工作**\n- **规律性认识\"五个必须统筹\"**（必背·多选高频）：\n  1. 必须统筹好**有效市场和有为政府**的关系\n  2. 必须统筹好**总供给和总需求**的关系\n  3. 必须统筹好**培育新动能和更新旧动能**的关系\n  4. 必须统筹好**做优增量和盘活存量**的关系\n  5. 必须统筹好**提升质量和做大总量**的关系\n- **2025年政策定调**：实施**更加积极的财政政策** + **适度宽松的货币政策**（自2011年以来**首次**转向\"适度宽松\"）\n- **九项重点任务**（首位任务为扩大内需）：\n  1. **大力提振消费、提高投资效益**，全方位扩大国内需求 ← 首位\n  2. 以科技创新引领新质生产力发展，建设现代化产业体系\n  3. 发挥经济体制改革牵引作用，推动标志性改革举措落地见效\n  4. 扩大高水平对外开放，稳外贸、稳外资\n  5. 有效防范化解重点领域风险，牢牢守住不发生系统性风险底线\n  6. 统筹推进新型城镇化和乡村全面振兴，促进城乡融合发展\n  7. 加大区域战略实施力度，增强区域发展活力\n  8. 协同推进降碳减污扩绿增长，加紧经济社会发展全面绿色转型\n  9. 加大保障和改善民生力度，增强人民群众获得感幸福感安全感\n- **其他要点**：综合整治\"**内卷式**\"竞争；持续用力推动房地产市场**止跌回稳**，稳住楼市股市；支持**经济大省挑大梁**\n\n> 📝 **口诀**：「五个统筹五字诀——**市供需新旧增减质量**」；「九项任务首内需：**内新改开防城区绿民**」。\n\n---\n\n## 三、2024年12月中央农村工作会议（12月17日—18日）——部署2025年\"三农\"工作\n\n- 习近平总书记对做好\"三农\"工作作出重要指示\n- 会议讨论《中共中央 国务院关于**进一步深化农村改革、扎实推进乡村全面振兴**的意见（讨论稿）》（即**2025年中央一号文件**讨论稿）\n- **两条底线**：确保**国家粮食安全**；确保**不发生规模性返贫致贫**\n- **三个提升**：提升乡村**产业发展**水平、乡村**建设**水平、乡村**治理**水平\n- **总方针**：坚持农业农村**优先发展**，坚持城乡**融合发展**；坚持把解决好\"三农\"问题作为全党工作**重中之重**，坚持**五级书记抓乡村振兴**\n\n> 📝 **口诀**：「**两条底线、三个提升**」。\n\n---\n\n## 四、2025年全国两会——政府工作报告与\"十四五\"收官部署\n\n- **时间**：全国政协十四届三次会议 **3月4日** 开幕；十四届全国人大三次会议 **3月5日** 开幕、**3月11日** 闭幕\n- **政府工作报告**：李强总理作报告（详见专题卡《2025年国务院政府工作报告核心考点》），核心数字速览：\n\n| 指标 | 2025年目标 |\n|------|-----------|\n| GDP增长 | **5%左右** |\n| CPI涨幅 | **2%左右** |\n| 城镇调查失业率 | **5.5%左右** |\n| 城镇新增就业 | **1200万人以上** |\n| 粮食产量 | **1.4万亿斤以上** |\n| 赤字率 | **4%左右**（首次突破3%） |\n| 专项债/超长期特别国债 | **4.4万亿 / 1.3万亿**（元） |\n\n- **\"十四五\"收官**：2025年是\"十四五\"规划收官之年，报告部署为\"十五五\"良好开局打牢基础\n- 两会期间，习近平总书记参加代表团审议并发表重要讲话（具体表述以新华社通稿为准）\n\n---\n\n## 五、2025年中央一号文件——深化农村改革（要点速览）\n\n- **全称**：《中共中央 国务院关于**进一步深化农村改革 扎实推进乡村全面振兴**的意见》，**2025年2月23日**发布\n- **序号**：党的十八大以来第**13**个指导\"三农\"工作的中央一号文件；2004年以来连续第**22**年\n- **总框架**：\"**两个持续、四个着力**\"；**首次提出\"农业新质生产力\"**\n- 📖 详细考点见专题卡《中共中央 国务院关于进一步深化农村改革 扎实推进乡村全面振兴的意见（2025年中央一号文件）考点》\n\n---\n\n## 六、抗战胜利80周年纪念大会（2025年9月3日，北京天安门广场）\n\n- 纪念**中国人民抗日战争暨世界反法西斯战争胜利80周年**，习近平总书记出席并发表重要讲话\n- **伟大抗战精神**（2020年纪念抗战胜利75周年座谈会概括，多选高频）：\n  - 天下兴亡、匹夫有责的**爱国情怀**\n  - 视死如归、宁死不屈的**民族气节**\n  - 不畏强暴、血战到底的**英雄气概**\n  - 百折不挠、坚忍不拔的**必胜信念**\n\n> 📝 **口诀**：「**爱节概念**——爱国情怀、民族气节、英雄气概、必胜信念」。\n\n---\n\n## 七、二十届四中全会（2025年10月20日—23日）——\"十五五\"规划建议\n\n- **会议性质**：党的二十届四中全会，审议通过《中共中央关于制定国民经济和社会发展**第十五个五年规划**的建议》\n- **历史方位**：在\"十四五\"规划收官之年、\"十五五\"规划编制启动之际召开，为\"十五五\"时期（2026—2030年）经济社会发展谋篇布局\n- **战略逻辑**：围绕基本实现社会主义现代化目标，对\"十五五\"时期发展作出系统部署；规划《建议》经法定程序形成\"十五五\"规划纲要（提请2026年全国人民代表大会审查批准，具体安排**待核实**）\n\n> 📝 **口诀**：「**四中全会定十五五**」。\n\n---\n\n## 八、习近平总书记重要论述与金句汇编\n\n### （一）新质生产力（2023年9月·黑龙江考察首次提出）\n- **内涵**：创新起主导作用，具有**高科技、高效能、高质量**特征，符合新发展理念的先进生产力质态\n- **核心标志**：**全要素生产率大幅提升**\n\n### （二）2025年新年贺词（2024年12月31日·第12次发表）金句\n- \"**梦虽遥，追则能达；愿虽艰，持则可圆。**\"\n- \"**家事国事天下事，让人民过上幸福生活是头等大事。**\"\n- \"中国式现代化的新征程上，每一个人都是主角，每一份付出都弥足珍贵，每一束光芒都熠熠生辉。\"\n\n### （三）教育强国（2024年9月9日—10日·全国教育大会）\n- 建成教育强国是近代以来中华民族梦寐以求的愿望；到 **2035年** 建成教育强国\n\n### （四）\"三农\"重要论述（高频）\n- 坚持把解决好\"三农\"问题作为全党工作**重中之重**\n- 坚持**五级书记抓乡村振兴**（省、市、县、乡、村五级书记一起抓）\n\n---\n\n## 九、高频数字速查表\n\n| 会议/事件 | 时间 | 核心记忆点 |\n|-----------|------|-----------|\n| 二十届三中全会 | 2024.7.15—18 | 七个聚焦/六个坚持/300多项举措/2029完成改革任务 |\n| 中央经济工作会议 | 2024.12.11—12 | 五个必须统筹/九项重点任务/双宽松定调 |\n| 中央农村工作会议 | 2024.12.17—18 | 两条底线/三个提升/一号文件讨论稿 |\n| 2025年新年贺词 | 2024.12.31 | 第12次发表/梦虽遥追则能达 |\n| 2025年全国两会 | 2025.3.4—11 | GDP5%左右/CPI2%/赤字率4%首破3% |\n| 2025年中央一号文件 | 2025.2.23 | 第13个/两个持续四个着力/首提农业新质生产力 |\n| 抗战胜利80周年大会 | 2025.9.3 | 伟大抗战精神四句话 |\n| 二十届四中全会 | 2025.10.20—23 | \"十五五\"规划建议 |\n\n---\n\n## 十、考情分析与分值关联\n\n- **时政模块权重**：近五年真题中政治时政合计占比约 **64%**，其中**时政热点约33%**（满分100分约合33分），是公基第一大模块；**中央会议与领导人讲话是时政题最大题源，约占时政题5—6成（约15—20分）**\n- **高频考法**：①单选——会议时间/主题/总基调数字；②多选——\"五个必须统筹\"\"七个聚焦\"\"伟大抗战精神\"；③不定项——金句归属、会议表述正误判断\n- **命题规律**：\"会议—主题—时间\"对应关系、**\"首次\"类表述**（首次提出/首次转向）、数字指标（第12次贺词、第13个一号文件、300多项举措）为三大出题方向\n- **三支一扶关联**：乡村振兴类任务（中央经济工作会议第6项、中央农村工作会议）与帮扶乡村振兴岗位直接相关，属必考区间\n\n---\n\n## 十一、记忆口诀汇总\n\n| 考点 | 口诀 |\n|------|------|\n| 二十届三中全会 | 七聚焦、六坚持、三百举措、二九交卷 |\n| 五个必须统筹 | 市供需新旧增减质量（五个统筹五字诀） |\n| 九项重点任务 | 内新改开防城区绿民（内需居首） |\n| 中央农村工作会议 | 两条底线、三个提升 |\n| 伟大抗战精神 | 爱节概念（爱国情怀/民族气节/英雄气概/必胜信念） |\n| 二十届四中全会 | 四中全会定十五五 |\n| 新年贺词 | 梦虽遥追则能达，愿虽艰持则可圆 |\n\n---\n\n## 十二、配套例题（五段式解析）\n\n### 例题1（单选·政策定调）\n**2024年12月中央经济工作会议确定的2025年货币政策取向是（ ）**\nA. 稳健　B. 适度宽松　C. 从紧　D. 中性\n\n**【正确答案】B**\n**【术语拆解】**\"货币政策取向\"是央行调节货币供应与信贷规模的方向性表述；本次调整为\"适度宽松\"，是自2011年以来**首次**由\"稳健\"转向\"适度宽松\"。\n**【选项辨析】**A\"稳健\"是2011—2024年的长期取向，为易混干扰；B正确；C\"从紧\"在2007—2008年使用过；D\"中性\"非我国官方表述。\n**【考情提示】**政策定调词\"财政更积极+货币适度宽松\"的**首次/转变**属性是单选必考点，须与2025年政府工作报告联动记忆。\n**【记忆口诀】**「**财积极、币宽松**，2011来首次松」。\n\n### 例题2（多选·全会聚焦）\n**党的二十届三中全会《决定》提出的\"七个聚焦\"包括（ ）**\nA. 聚焦构建高水平社会主义市场经济体制\nB. 聚焦发展全过程人民民主\nC. 聚焦建设更高水平平安中国\nD. 聚焦实现共同富裕\n\n**【正确答案】ABC**\n**【术语拆解】**\"七个聚焦\"是三中全会《决定》对改革目标的分领域展开，覆盖经济、民主、文化、民生、生态、平安、党建七大板块。\n**【选项辨析】**A、B、C均为\"七个聚焦\"内容；D\"聚焦实现共同富裕\"不在\"七个聚焦\"清单中（共同富裕体现在\"提高人民生活品质\"等聚焦的落脚点上），属表述偷换。\n**【考情提示】**\"几个必须/几个聚焦/几个坚持\"类清单题是时政多选最高频题型，逐字记忆清单内容，警惕\"相近但不在清单\"的干扰项。\n**【记忆口诀】**「**经民主文生平党**——经济、民主、文化、生活品质、美丽中国、平安中国、党的领导」→ 谐音\"**经民文生，平党七聚**\"。\n\n### 例题3（不定项·金句归属）\n**下列属于习近平总书记二〇二五年新年贺词中金句的有（ ）**\nA. 梦虽遥，追则能达；愿虽艰，持则可圆\nB. 家事国事天下事，让人民过上幸福生活是头等大事\nC. 中国式现代化的新征程上，每一个人都是主角\nD. 我将无我，不负人民\n\n**【正确答案】ABC**\n**【术语拆解】**\"新年贺词\"是习近平总书记每年12月31日发表的年度讲话，2025年贺词为**第12次**发表，金句归属是高频考点。\n**【选项辨析】**A、B、C均为二〇二五年新年贺词原文；D\"我将无我，不负人民\"出自2019年3月总书记出访意大利时的讲话，非新年贺词内容，属跨场合张冠李戴。\n**【考情提示】**不定项（10题×1.5分）要求精确记忆金句出处；备考方法：将贺词金句按\"年份—场合—原句\"建表记忆。\n**【记忆口诀】**「**梦愿家事主角**——贺词四金句：梦虽遥、愿虽艰、家事国事、每一个人都是主角」。\n\n---\n\n## 十三、来源与声明\n\n- **一手来源**：新华社受权发布的全会公报与会议通稿、人民日报社论、《政府工作报告》全文、中央一号文件全文（中国政府网）、国家统计局公报\n- **权威性说明**：本卡全部事实均可溯源至上述官方渠道；上轮版本中引用\"券商研报\"的2026年数据（赤字率、特别国债规模等）因无法溯源，**已整体移除**，改以官方可查证口径表述\n- **待核实**：①\"十五五\"规划纲要提请全国人大审查批准的具体会议安排；②2026年3月两会政府工作报告、2026年中央一号文件、2025年12月中央经济工作会议等最新时政数据——均以官方发布为准，本卡不收录无法溯源的数字\n- **⚠️ 考试前更新提示（重要）**：考试日为2026-08-22，2026年两会、2026年中央一号文件及2025年12月中央经济工作会议为考期最新时政，优先级高于本卡内容；请以官方原文为准，本卡提供的是**会议框架、命题规律与记忆方法**，新数据发布后按同结构更新替换\n- **声明**：本卡内容仅作备考学习使用，不构成任何政治立场表达\n\n---\n\n### 📌 每日更新 2026-08-13：河南省2026年高校毕业生“三支一扶”计...\n- **来源**：http://www.hnrsks.com/sitesources/hnsrskszx/page_pc/zngg/articleceb9de9a9b43436a93cedf821947fae0.html\n- **摘要**：河南省2026年高校毕业生“三支一扶”计...\n- **相关度**：11（由 scripts/daily_kb_update.py 自动追加，保留溯源链接）\n\n---\n\n### 📌 每日更新 2026-08-13：中共中央办公厅 国务院办公厅印发《乡村振兴责任制实施办法》\n- **来源**：http://www.news.cn/politics/2022-12/14/c_1129206017.htm\n- **摘要**：近日，中共中央办公厅、国务院办公厅印发了《乡村振兴责任制实施办法》，并发出通知，要求各地区各部门认真遵照执行。\n- **相关度**：4（由 scripts/daily_kb_update.py 自动追加，保留溯源链接）\n", "size": 16169, "quality": {"score": 95, "level": "优秀", "dimensions": {"字数": 10, "知识点章节": 15, "表格": 15, "口诀": 15, "考情分析": 10, "来源标注": 0, "结构化": 5, "重点标记": 5, "分值关联": 10, "例题": 10}, "details": ["字数充足(+10)", "知识点丰富(13节,+15)", "含对比表格(+15)", "含记忆口诀(+15)", "含考情分析(+10)", "结构化列表(+5)", "重点标记(+5)", "分值关联(+10)", "含例题参考(+10)"], "max_score": 100, "word_count": 6490}}, "公文写作/公文格式·行文规则·常用文种核心考点.md": {"title": "公文格式·行文规则·常用文种核心考点", "module": "公文写作", "path": "公文写作/公文格式·行文规则·常用文种核心考点.md", "content": "# 公文格式·行文规则·常用文种 核心考点（公基公文模块）\n\n- 模块：公文写作\n- 来源：《党政机关公文处理工作条例》（中办发〔2012〕14号）；《党政机关公文格式》GB/T 9704-2012（国家标准）\n- 可信度：高（中共中央办公厅、国务院办公厅联合发布的国家标准和条例，公开可查）\n- 可考点：是\n- 知识点数量：10 个核心考点\n\n## 📌 摘要\n\n公文写作在公基考试中属于独立模块，知识点高度标准化（有国家标准），考题以「是什么」「怎么用」为主。所有内容均可在 GB/T 9704-2012 和《条例》中查证原文。\n\n## 🎯 核心考点\n\n1. **公文种类（15 种）**：决议、决定、命令（令）、公报、公告、通告、意见、通知、通报、报告、请示、批复、议案、函、纪要。📝 三支一扶考试中最常考：通知、报告、请示、批复、函。\n\n2. **上行文·下行文·平行文**：上行文（报告、请示等→向上级）；下行文（命令、决定、通知、批复等→向下级）；平行文（函→同级或不相隶属机关）。\n\n3. **发文字号**：由发文机关代字、年份、发文顺序号组成。如「国发〔2025〕1号」。年份用六角括号〔〕，不用中括号[]或圆括号()。\n\n4. **公文格式要素**（18 个要素，GB/T 9704-2012）：份号、密级和保密期限、紧急程度、发文机关标志、发文字号、签发人、标题、主送机关、正文、附件说明、发文机关署名、成文日期、印章、附注、附件、抄送机关、印发机关和印发日期、页码。\n\n5. **标题规范**：发文机关 + 事由 + 文种。如《国务院关于进一步深化农村改革的意见》。事由前加「关于」，文种前不加「的」。\n\n6. **通知**：适用于发布、传达要求下级机关执行的事项，批转、转发公文。是使用频率最高的文种。\n\n7. **报告与请示的区别**：报告→汇报工作、反映情况，不要求批复（「阅件」）；请示→请求指示、批准，必须批复（「办件」）。报告中不得夹带请示事项。\n\n8. **批复**：适用于答复下级机关请示事项。一文一事，只主送请示机关。\n\n9. **函**：适用于不相隶属机关之间商洽工作、询问和答复问题、请求批准和答复审批事项。注意：向无隶属关系的机关请求批准用「函」而非「请示」。\n\n10. **纪要**：适用于记载会议主要情况和议定事项。与「会议记录」不同：纪要经过加工整理，记录是原始笔录。\n\n## 📝 考情提示\n\n- 公文模块通常占 2-4 题，考点集中于文种辨析和格式规范\n- 最易错点：报告vs请示（是否需批复）、函vs请示（有无隶属关系）\n- 「发文字号用六角括号」是每年必考点\n\n## 🔗 溯源\n\n- 《党政机关公文处理工作条例》全文可在中央人民政府网站查阅\n- GB/T 9704-2012 可在国家标准全文公开系统 (openstd.samr.gov.cn) 免费查阅\n", "size": 3067, "quality": {"score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1113}}, "三农与乡村振兴/粮食安全·耕地保护·乡村振兴核心政策考点.md": {"title": "粮食安全·耕地保护·乡村振兴核心政策考点", "module": "三农与乡村振兴", "path": "三农与乡村振兴/粮食安全·耕地保护·乡村振兴核心政策考点.md", "content": "# 粮食安全·耕地保护·乡村振兴 核心政策考点（公基三农模块）\n\n- 模块：三农与乡村振兴\n- 来源：历年中央一号文件（中国政府网公开发布）；《中华人民共和国乡村振兴促进法》（2021年施行）；《中华人民共和国粮食安全保障法》（2024年施行）\n- 可信度：高（全国人大立法和国务院政策文件，中国政府网可查）\n- 可考点：是（三支一扶核心考点）\n- 知识点数量：10 个核心考点\n\n## 📌 摘要\n\n三农模块是三支一扶考试的重中之重——因为你未来的工作岗位就在基层农村。本卡覆盖粮食安全、耕地保护、乡村振兴等核心政策，所有内容均出自正式法律和中央文件。\n\n## 🎯 核心考点\n\n1. **国家粮食安全战略**：以我为主、立足国内、确保产能、适度进口、科技支撑。确保谷物基本自给、口粮绝对安全。粮食产量目标：1.4万亿斤左右。\n\n2. **18亿亩耕地红线**：《粮食安全保障法》明确规定：国家实行最严格的耕地保护制度，严守18亿亩耕地红线。坚决遏制耕地「非农化」、防止「非粮化」。\n\n3. **永久基本农田**：已划定的永久基本农田不得擅自占用或改变用途。高标准农田建设：新建和改造提升高标准农田。\n\n4. **不发生规模性返贫**：2025年中央一号文件明确「两条底线」——确保国家粮食安全、确保不发生规模性返贫致贫。健全防止返贫动态监测和帮扶机制。\n\n5. **乡村振兴总要求**（20字方针）：产业兴旺、生态宜居、乡风文明、治理有效、生活富裕。\n\n6. **千万工程**：习近平总书记当年在浙江推动的「千村示范、万村整治」工程。核心：从农村人居环境整治入手，全面推进乡村振兴。\n\n7. **乡村治理体系**：健全党组织领导下的自治、法治、德治相结合的乡村治理体系。枫桥经验：基层矛盾纠纷就地化解。\n\n8. **县域富民产业**：2025年中央一号文件强调「着力壮大县域富民产业」，完善联农带农机制。\n\n9. **大食物观**：构建多元化食物供给体系。向耕地草原森林海洋、向植物动物微生物要热量、要蛋白。\n\n10. **农村土地「三权分置」**：所有权归集体、承包权归农户、经营权可流转。\n\n## 📝 考情提示\n\n- 三支一扶考生必背「两条底线」和乡村振兴20字方针\n- 「18亿亩」「1.4万亿斤」是万年数字考点\n- 千万工程、枫桥经验、大食物观是近年新热考点\n\n## 🔗 溯源\n\n- 历年中央一号文件：中国政府网 https://www.gov.cn/zhengce/\n- 《乡村振兴促进法》全文：http://www.npc.gov.cn/\n- 《粮食安全保障法》全文：http://www.npc.gov.cn/\n- 以上均为官方发布，可免费查阅验证\n", "size": 2864, "quality": {"score": 41, "level": "一般", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1052}}, "中国特色社会主义理论/习近平新时代中国特色社会主义思想核心考点.md": {"title": "习近平新时代中国特色社会主义思想核心考点", "module": "中国特色社会主义理论", "path": "中国特色社会主义理论/习近平新时代中国特色社会主义思想核心考点.md", "content": "# 习近平新时代中国特色社会主义思想·中国特色社会主义理论体系 核心考点\n\n- 模块：中国特色社会主义理论\n- 来源：党的二十大报告（2022年10月）；《习近平谈治国理政》第一至四卷；《习近平新时代中国特色社会主义思想学习纲要》（中宣部编）；十九届六中全会《关于党的百年奋斗重大成就和历史经验的决议》\n- 可信度：高（党中央正式文件和官方出版物，新华网/人民网可查）\n- 可考点：是\n- 知识点数量：12 个核心考点\n\n## 📌 摘要\n\n中特理论是公基时政部分的重中之重。本卡覆盖习近平新时代中国特色社会主义思想的核心内容（「十个明确」「十四个坚持」「十三个方面成就」）以及中国特色社会主义理论体系的基础概念。所有内容均可在党的二十大报告和学习纲要中查证原文。\n\n## 🎯 核心考点\n\n1. **「两个确立」**（党的十九届六中全会提出，二十大重申）\n   - 确立习近平同志党中央的核心、全党的核心地位\n   - 确立习近平新时代中国特色社会主义思想的指导地位\n   - 📝 这是新时代取得一切成就的根本保证，必背\n\n2. **「四个意识」「四个自信」「两个维护」**\n   - 四个意识：政治意识、大局意识、核心意识、看齐意识\n   - 四个自信：道路自信、理论自信、制度自信、文化自信\n   - 两个维护：坚决维护习近平总书记党中央的核心、全党的核心地位，坚决维护党中央权威和集中统一领导\n\n3. **「十个明确」**——习近平新时代中国特色社会主义思想的核心内容\n   - ① 明确中国特色社会主义最本质的特征是中国共产党领导\n   - ② 明确坚持和发展中国特色社会主义的总任务（实现社会主义现代化和中华民族伟大复兴）\n   - ③ 明确新时代我国社会主要矛盾（人民日益增长的美好生活需要和不平衡不充分的发展之间的矛盾）\n   - ④ 明确中国特色社会主义事业总体布局是「五位一体」、战略布局是「四个全面」\n   - ⑤ 明确全面深化改革总目标\n   - ⑥ 明确全面推进依法治国总目标\n   - ⑦ 明确必须坚持和完善社会主义基本经济制度\n   - ⑧ 明确党在新时代的强军目标\n   - ⑨ 明确中国特色大国外交\n   - ⑩ 明确全面从严治党的战略方针\n\n4. **「十四个坚持」**——新时代坚持和发展中国特色社会主义的基本方略\n\n5. **「五位一体」总体布局**\n   - 经济建设、政治建设、文化建设、社会建设、生态文明建设\n\n6. **「四个全面」战略布局**\n   - 全面建设社会主义现代化国家、全面深化改革、全面依法治国、全面从严治党\n\n7. **中国式现代化**（党的二十大核心论述）\n   - 五个特征：人口规模巨大的现代化、全体人民共同富裕的现代化、物质文明和精神文明相协调的现代化、人与自然和谐共生的现代化、走和平发展道路的现代化\n   - 本质要求：坚持中国共产党领导，坚持中国特色社会主义\n\n8. **新发展理念**（创新、协调、绿色、开放、共享）\n   - 创新是引领发展的第一动力\n   - 协调是持续健康发展的内在要求\n   - 绿色是永续发展的必要条件\n   - 开放是国家繁荣发展的必由之路\n   - 共享是中国特色社会主义的本质要求\n\n9. **高质量发展**\n   - 党的二十大明确：高质量发展是全面建设社会主义现代化国家的首要任务\n   - 发展是党执政兴国的第一要务\n\n10. **新质生产力**（习近平总书记2023年9月在黑龙江首次提出）\n    - 特点是创新，关键在质优，本质是先进生产力\n    - 核心标志：全要素生产率大幅提升\n\n11. **共同富裕**\n    - 是中国式现代化的重要特征\n    - 不是少数人的富裕，也不是整齐划一的平均主义\n    - 在高质量发展中促进共同富裕\n\n12. **全过程人民民主**\n    - 社会主义民主政治的本质属性\n    - 是最广泛、最真实、最管用的民主\n\n## 📝 考情提示\n\n- 中特理论+时政合计占公基约 **64%**，是三支一扶考试的绝对核心\n- 「中国式现代化」「新质生产力」是 2024-2025 年最热考点\n- 注意区分「十个明确」（理论概括）和「十四个坚持」（实践方略）\n- 常考「帽子题」：给一个概念选准确的定位表述\n\n## 🔗 溯源与验证\n\n- 党的二十大报告全文：https://www.gov.cn/xinwen/2022-10/25/content_5721685.htm（中国政府网）\n- 《习近平谈治国理政》——外文出版社，全国新华书店有售\n- 《习近平新时代中国特色社会主义思想学习纲要》——学习出版社、人民出版社\n- 以上均为党中央正式出版物和官方发布文本，可公开查阅\n", "size": 4919, "quality": {"score": 45, "level": "一般", "dimensions": {"字数": 10, "知识点章节": 10, "表格": 0, "口诀": 0, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数充足(+10)", "知识点达标(4节,+10)", "缺少表格", "缺少记忆口诀", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1691}}, "中共党史/建党·长征·抗战·建国重大事件与会议核心考点.md": {"title": "建党·长征·抗战·建国重大事件与会议核心考点", "module": "中共党史", "path": "中共党史/建党·长征·抗战·建国重大事件与会议核心考点.md", "content": "# 建党·长征·抗战·建国 重大事件与会议 核心考点（公基党史模块）\n\n- 模块：中共党史\n- 来源：《中国共产党简史》（人民出版社、中共党史出版社）；《中国共产党的一百年》（中共党史出版社）；《关于若干历史问题的决议》（1945）、《关于建国以来党的若干历史问题的决议》（1981）、《关于党的百年奋斗重大成就和历史经验的决议》（2021）\n- 可信度：高（党中央批准的正式党史著作和决议，全国新华书店有售）\n- 可考点：是\n- 知识点数量：12 个核心考点\n\n## 📌 摘要\n\n中共党史在公基考试中约占 2-3 题，以重大事件、重要会议及其历史意义为考查重点。本卡按时间线梳理核心考点。所有内容均可在正式党史著作中查证。\n\n## 🎯 核心考点\n\n1. **中共一大（1921.7，上海→嘉兴南湖）**：宣告中国共产党成立。确定党的名称为「中国共产党」。\n\n2. **南昌起义（1927.8.1）**：打响了武装反抗国民党反动派的第一枪，标志着中国共产党独立领导革命战争、创建人民军队的开始。8月1日后来定为建军节。\n\n3. **八七会议（1927.8，汉口）**：确定了土地革命和武装斗争的总方针。毛泽东提出「枪杆子里出政权」的著名论断。\n\n4. **秋收起义与井冈山（1927.9-10）**：毛泽东领导秋收起义，后率部上井冈山，建立第一个农村革命根据地，开辟「农村包围城市、武装夺取政权」的道路。\n\n5. **遵义会议（1935.1，贵州遵义）**：确立了毛泽东在党和红军中的领导地位，挽救了党、红军和革命，是党的历史上生死攸关的转折点。\n\n6. **长征（1934.10-1936.10）**：红军主力从各革命根据地向陕北的战略转移，行程约二万五千里。1936年10月三大主力会师，长征胜利结束。\n\n7. **党的七大（1945.4-6，延安）**：确立毛泽东思想为党的指导思想并写入党章。提出党的三大作风。\n\n8. **新中国成立（1949.10.1）**：中国人民政治协商会议第一届全体会议通过《共同纲领》（临时宪法），毛泽东宣告中华人民共和国成立。\n\n9. **十一届三中全会（1978.12）**：确立了解放思想、实事求是的思想路线，作出改革开放的历史性决策，是新中国成立以来党的历史上具有深远意义的转折。\n\n10. **党的十八大（2012.11）**：中国特色社会主义进入新时代。习近平当选中共中央总书记。\n\n11. **党的十九大（2017.10）**：确立习近平新时代中国特色社会主义思想为党的指导思想并写入党章。\n\n12. **党的二十大（2022.10）**：明确中心任务——团结带领全国各族人民全面建成社会主义现代化强国、实现第二个百年奋斗目标，以中国式现代化全面推进中华民族伟大复兴。\n\n## 📝 考情提示\n\n- 遵义会议、十一届三中全会、党的七大是最高频考点\n- 注意区分各次会议的历史意义定位\n- 重要时间节点（1921/1927/1935/1949/1978）需精准记忆\n\n## 🔗 溯源\n\n- 《中国共产党简史》——人民出版社 2021年版，ISBN: 978-7-01-023294-2\n- 《中国共产党的一百年》——中共党史出版社 2022年版\n- 三个「历史决议」全文可在新华网查阅\n", "size": 3383, "quality": {"score": 56, "level": "良好", "dimensions": {"字数": 6, "知识点章节": 10, "表格": 0, "口诀": 15, "考情分析": 10, "来源标注": 5, "结构化": 5, "重点标记": 5, "分值关联": 0, "例题": 0}, "details": ["字数达标(+6)", "知识点达标(4节,+10)", "缺少表格", "含记忆口诀(+15)", "含考情分析(+10)", "标注来源(+5)", "结构化列表(+5)", "重点标记(+5)"], "max_score": 100, "word_count": 1277}}}, "quiz": {"total": 49, "questions": [{"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "2025年《政府工作报告》提出，2025年国内生产总值增长预期目标为（ ）左右。", "options": {"A": "4.5%", "B": "5%", "C": "5.5%", "D": "6%"}, "answer": "B", "explanation": "【正确答案】B（5%）\n\n【术语拆解】\n• 「国内生产总值（GDP）」：一个国家在一定时期内生产的所有最终产品和服务的市场价值总和，是衡量经济规模最核心的指标。\n• 「预期目标」：政府提出的年度经济发展期望值，不同于指令性计划，是指导性、预期性的。\n• 「政府工作报告」：国务院总理每年在全国人民代表大会上所做的报告，总结上一年工作、部署当年任务。2025年报告于3月5日由李强总理在十四届全国人大三次会议上作出。\n\n【选项辨析】\n• A 4.5%：明显偏低。若设为4.5%，无法体现\"稳中求进\"。国际货币基金组织（IMF）预测2025年中国经济增速约4.6%，但中国政府目标通常略高于国际机构预测。\n• B 5%（✅）：2024年目标也是5%左右，2025年延续同一目标，体现政策的连续性和稳定性。在外部不确定性增大的背景下，保持5%的增长目标需要付出艰苦努力。\n• C 5.5%：偏高。在全球经济放缓、国内结构调整的背景下，设定5.5%可能脱离实际。\n• D 6%：过高。最近一次设定6%以上目标是2021年（疫情后恢复性增长），2022年以后已不再设定6%的目标。\n\n【考情提示】GDP增速目标是每年政府工作报告的必考数字，2025年与2024年目标持平（均为5%），这个\"不变\"本身就可能成为考点。\n【记忆口诀】\"二五目标五不变，稳中求进是关键\"", "correct_answer": "【正确答案】B（5%）", "term_breakdown": "【术语拆解】\n• 「国内生产总值（GDP）」：一个国家在一定时期内生产的所有最终产品和服务的市场价值总和，是衡量经济规模最核心的指标。\n• 「预期目标」：政府提出的年度经济发展期望值，不同于指令性计划，是指导性、预期性的。\n• 「政府工作报告」：国务院总理每年在全国人民代表大会上所做的报告，总结上一年工作、部署当年任务。2025年报告于3月5日由李强总理在十四届全国人大三次会议上作出。", "option_analysis": "【选项辨析】\n• A 4.5%：明显偏低。若设为4.5%，无法体现\"稳中求进\"。国际货币基金组织（IMF）预测2025年中国经济增速约4.6%，但中国政府目标通常略高于国际机构预测。\n• B 5%（✅）：2024年目标也是5%左右，2025年延续同一目标，体现政策的连续性和稳定性。在外部不确定性增大的背景下，保持5%的增长目标需要付出艰苦努力。\n• C 5.5%：偏高。在全球经济放缓、国内结构调整的背景下，设定5.5%可能脱离实际。\n• D 6%：过高。最近一次设定6%以上目标是2021年（疫情后恢复性增长），2022年以后已不再设定6%的目标。", "exam_hint": "【考情提示】GDP增速目标是每年政府工作报告的必考数字，2025年与2024年目标持平（均为5%），这个\"不变\"本身就可能成为考点。", "mnemonic": "【记忆口诀】\"二五目标五不变，稳中求进是关键\"", "_id": "2026-08-13-merged-0", "question_id": "2026-08-13-merged-0"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "2025年《政府工作报告》指出，2025年赤字率按（ ）左右安排，赤字规模比上年增加1.6万亿元。", "options": {"A": "3%", "B": "3.5%", "C": "4%", "D": "4.5%"}, "answer": "C", "explanation": "【正确答案】C（4%）\n\n【术语拆解】\n• 「赤字率」：财政赤字占GDP的比重。赤字=财政支出-财政收入，赤字率越高说明政府花的钱比赚的钱多得越多，财政政策越\"积极\"（扩张）。\n• 「赤字规模」：赤字的绝对金额。2025年赤字规模为5.66万亿元（5.66万亿÷GDP≈4%）。\n• 「比上年增加1.6万亿」：2024年赤字规模约4.06万亿，2025年增加了1.6万亿→5.66万亿，增幅约39%，力度空前。\n\n【选项辨析】\n• A 3%：这是2024年的赤字率。欧盟《马斯特里赫特条约》曾将3%设为赤字率\"警戒线\"，但中国已突破该线。\n• B 3.5%：2023年四季度增发1万亿特别国债后，实际赤字率接近3.5%，但并非当年预算赤字率。\n• C 4%（✅）：2025年预算赤字率首次达到4%，突破传统3%\"红线\"，释放了\"更加积极的财政政策\"信号。\n• D 4.5%：偏高。虽然2025年财政扩张力度大，但尚未达到4.5%的水平。\n\n【考情提示】赤字率\"破4\"是2025年财政政策的最大看点，极易出单选题。注意区分\"预算赤字率\"和\"实际赤字率\"（含特别国债、专项债后的广义赤字率更高）。\n【记忆口诀】\"二五赤字破三到四，国债多了一万六\"", "correct_answer": "【正确答案】C（4%）", "term_breakdown": "【术语拆解】\n• 「赤字率」：财政赤字占GDP的比重。赤字=财政支出-财政收入，赤字率越高说明政府花的钱比赚的钱多得越多，财政政策越\"积极\"（扩张）。\n• 「赤字规模」：赤字的绝对金额。2025年赤字规模为5.66万亿元（5.66万亿÷GDP≈4%）。\n• 「比上年增加1.6万亿」：2024年赤字规模约4.06万亿，2025年增加了1.6万亿→5.66万亿，增幅约39%，力度空前。", "option_analysis": "【选项辨析】\n• A 3%：这是2024年的赤字率。欧盟《马斯特里赫特条约》曾将3%设为赤字率\"警戒线\"，但中国已突破该线。\n• B 3.5%：2023年四季度增发1万亿特别国债后，实际赤字率接近3.5%，但并非当年预算赤字率。\n• C 4%（✅）：2025年预算赤字率首次达到4%，突破传统3%\"红线\"，释放了\"更加积极的财政政策\"信号。\n• D 4.5%：偏高。虽然2025年财政扩张力度大，但尚未达到4.5%的水平。", "exam_hint": "【考情提示】赤字率\"破4\"是2025年财政政策的最大看点，极易出单选题。注意区分\"预算赤字率\"和\"实际赤字率\"（含特别国债、专项债后的广义赤字率更高）。", "mnemonic": "【记忆口诀】\"二五赤字破三到四，国债多了一万六\"", "_id": "2026-08-13-merged-1", "question_id": "2026-08-13-merged-1"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "2025年中央一号文件的主题是（ ）。", "options": {"A": "《关于全面推进乡村振兴加快农业农村现代化的意见》", "B": "《关于做好2024年全面推进乡村振兴重点工作的意见》", "C": "《关于进一步深化农村改革 扎实推进乡村全面振兴的意见》", "D": "《关于学习运用\"千村示范、万村整治\"工程经验有力有效推进乡村全面振兴的意见》"}, "answer": "C", "explanation": "【正确答案】C\n\n【术语拆解】\n• 「中央一号文件」：中共中央、国务院每年发布的第一个文件（通常在1-2月），连续多年聚焦\"三农\"（农业、农村、农民）问题。自2004年起，除2011年外，每年一号文件都以三农为主题。\n• 「乡村振兴」：党的十九大提出的重大战略（2017年），目标是\"产业兴旺、生态宜居、乡风文明、治理有效、生活富裕\"。\n• 「深化农村改革」：2025年文件的关键词，强调改革而非简单的资金投入。\n\n【选项辨析】\n• A：2021年一号文件主题。当时重点在\"加快农业农村现代化\"。\n• B：2024年一号文件主题。注意\"2024年\"字样，不可能成为2025年文件的标题。\n• C（✅）：2025年2月23日发布，关键词「深化农村改革」「乡村全面振兴」。\n• D：这是2025年文件中强调的学习\"千万工程\"经验的要求，对应2024年一号文件的主题，属于混淆选项。\n\n【考情提示】三支一扶考生必背！每年一号文件主题必考。注意区分「全面推进」（2021）、「重点工作」（2024）、「深化改革」（2025）三个关键词的年份对应。\n【记忆口诀】\"二一现代二四重，二五改革是正宗\"", "correct_answer": "【正确答案】C", "term_breakdown": "【术语拆解】\n• 「中央一号文件」：中共中央、国务院每年发布的第一个文件（通常在1-2月），连续多年聚焦\"三农\"（农业、农村、农民）问题。自2004年起，除2011年外，每年一号文件都以三农为主题。\n• 「乡村振兴」：党的十九大提出的重大战略（2017年），目标是\"产业兴旺、生态宜居、乡风文明、治理有效、生活富裕\"。\n• 「深化农村改革」：2025年文件的关键词，强调改革而非简单的资金投入。", "option_analysis": "【选项辨析】\n• A：2021年一号文件主题。当时重点在\"加快农业农村现代化\"。\n• B：2024年一号文件主题。注意\"2024年\"字样，不可能成为2025年文件的标题。\n• C（✅）：2025年2月23日发布，关键词「深化农村改革」「乡村全面振兴」。\n• D：这是2025年文件中强调的学习\"千万工程\"经验的要求，对应2024年一号文件的主题，属于混淆选项。", "exam_hint": "【考情提示】三支一扶考生必背！每年一号文件主题必考。注意区分「全面推进」（2021）、「重点工作」（2024）、「深化改革」（2025）三个关键词的年份对应。", "mnemonic": "【记忆口诀】\"二一现代二四重，二五改革是正宗\"", "_id": "2026-08-13-merged-2", "question_id": "2026-08-13-merged-2"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "\"新质生产力\"这一重大概念是习近平总书记于2023年9月在（ ）考察调研时首次提出的。", "options": {"A": "广东", "B": "浙江", "C": "黑龙江", "D": "四川"}, "answer": "C", "explanation": "【正确答案】C（黑龙江）\n\n【术语拆解】\n• 「新质生产力」：以科技创新为主导，摆脱传统经济增长方式和生产力发展路径的先进生产力质态。关键词：创新、质优、先进。\n• 「首次提出」：2023年9月，习近平总书记在黑龙江考察调研期间提出。当时他在哈尔滨主持召开新时代推动东北全面振兴座谈会。\n• 为什么在东北提出？东北老工业基地面临转型困境，传统生产力路径走到尽头，恰好需要在\"新\"和\"质\"上做文章。\n\n【选项辨析】\n• A 广东：改革开放前沿，经济活跃但没有\"首次提出\"的节点意义。\n• B 浙江：共同富裕示范区，习近平总书记确实在浙江提出过\"八八战略\"等重要论述，但不是\"新质生产力\"的首提地。\n• C 黑龙江（✅）：记住\"黑\"字——东北振兴需要\"黑科技\"。\n• D 四川：西部重镇，2023年7月习近平总书记去过四川考察，但考察重点是生态保护和文化传承，不是经济转型。\n\n【考情提示】\"首次提出\"的时间和地点是三支一扶时政题的高频考点。注意区分：新质生产力\"首次提出\"在黑龙江，而\"系统阐述\"在2024年1月中央政治局第十一次集体学习。\n【记忆口诀】\"黑龙江畔九月天，新质生产力开新篇\"", "correct_answer": "【正确答案】C（黑龙江）", "term_breakdown": "【术语拆解】\n• 「新质生产力」：以科技创新为主导，摆脱传统经济增长方式和生产力发展路径的先进生产力质态。关键词：创新、质优、先进。\n• 「首次提出」：2023年9月，习近平总书记在黑龙江考察调研期间提出。当时他在哈尔滨主持召开新时代推动东北全面振兴座谈会。\n• 为什么在东北提出？东北老工业基地面临转型困境，传统生产力路径走到尽头，恰好需要在\"新\"和\"质\"上做文章。", "option_analysis": "【选项辨析】\n• A 广东：改革开放前沿，经济活跃但没有\"首次提出\"的节点意义。\n• B 浙江：共同富裕示范区，习近平总书记确实在浙江提出过\"八八战略\"等重要论述，但不是\"新质生产力\"的首提地。\n• C 黑龙江（✅）：记住\"黑\"字——东北振兴需要\"黑科技\"。\n• D 四川：西部重镇，2023年7月习近平总书记去过四川考察，但考察重点是生态保护和文化传承，不是经济转型。", "exam_hint": "【考情提示】\"首次提出\"的时间和地点是三支一扶时政题的高频考点。注意区分：新质生产力\"首次提出\"在黑龙江，而\"系统阐述\"在2024年1月中央政治局第十一次集体学习。", "mnemonic": "【记忆口诀】\"黑龙江畔九月天，新质生产力开新篇\"", "_id": "2026-08-13-merged-3", "question_id": "2026-08-13-merged-3"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "党的二十届三中全会审议通过的重要文件是（ ）。", "options": {"A": "《中共中央关于制定国民经济和社会发展第十五个五年规划的建议》", "B": "《中共中央关于全面推进依法治国若干重大问题的决定》", "C": "《中共中央关于进一步全面深化改革、推进中国式现代化的决定》", "D": "《中共中央关于深化党和国家机构改革的决定》"}, "answer": "C", "explanation": "【正确答案】C\n\n【术语拆解——逐字解释「二十届三中全会」】\n• 「党」：中国共产党（注意：三中全会指的是党的全会，不是人大会议也不是政协会议）。\n• 「二十届」：第二十届中央委员会。每五年一届，由党的全国代表大会选举产生。\"二十大\"（2022年10月）→选举产生第二十届中央委员会→本届任期2022-2027年。\n• 「三中」：第三次全体会议。每届中央委员会通常召开七次全体会议，习惯称\"一中全会\"到\"七中全会\"。\n  - 「一中全会」：党代会闭幕后马上开，选举中央领导机构（总书记、政治局等）\n  - 「二中全会」：研究国家机构领导人选\n  - 「三中全会」：通常聚焦经济体制改革和重大改革议题（如十一届三中全会开启改革开放、十八届三中全会全面深化改革、二十届三中全会进一步全面深化改革）\n  - 「四中全会」：通常聚焦党建/依法治国\n  - 「五中全会」：通常审议五年规划\n  - 「六中全会」：通常聚焦意识形态/党建\n  - 「七中全会」：为下一届党代会做准备\n• 「全会」：全体会议的简称，区别于政治局会议（人数少、召开频次高）和中央委员会全体会议（人数多、重大决策）。\n\n【选项辨析】\n• A：\"十五五\"规划建议预计在2025年二十届五中全会审议。\n• B：2014年十八届四中全会通过的文件。注意\"十八届\"→2014年，\"依法治国\"→四中。\n• C（✅）：2024年7月15-18日，二十届三中全会通过。关键词\"进一步全面深化改革\"+ \"中国式现代化\"。\n• D：2018年十九届三中全会通过的文件。注意\"深化党和国家机构改革\"→三中全会改革议题，但这是十九届而非二十届。\n\n【考情提示】三支一扶必考！记住规律：三中全会=改革。选项经常混搭不同届次的文件，需要看清\"届次\"。\n【记忆口诀】\"三中全会议改革，二十届推现代化；四中依法治国务，五中全会定规划\"", "correct_answer": "【正确答案】C", "term_breakdown": "【术语拆解——逐字解释「二十届三中全会」】\n• 「党」：中国共产党（注意：三中全会指的是党的全会，不是人大会议也不是政协会议）。\n• 「二十届」：第二十届中央委员会。每五年一届，由党的全国代表大会选举产生。\"二十大\"（2022年10月）→选举产生第二十届中央委员会→本届任期2022-2027年。\n• 「三中」：第三次全体会议。每届中央委员会通常召开七次全体会议，习惯称\"一中全会\"到\"七中全会\"。\n  - 「一中全会」：党代会闭幕后马上开，选举中央领导机构（总书记、政治局等）\n  - 「二中全会」：研究国家机构领导人选\n  - 「三中全会」：通常聚焦经济体制改革和重大改革议题（如十一届三中全会开启改革开放、十八届三中全会全面深化改革、二十届三中全会进一步全面深化改革）\n  - 「四中全会」：通常聚焦党建/依法治国\n  - 「五中全会」：通常审议五年规划\n  - 「六中全会」：通常聚焦意识形态/党建\n  - 「七中全会」：为下一届党代会做准备\n• 「全会」：全体会议的简称，区别于政治局会议（人数少、召开频次高）和中央委员会全体会议（人数多、重大决策）。", "option_analysis": "【选项辨析】\n• A：\"十五五\"规划建议预计在2025年二十届五中全会审议。\n• B：2014年十八届四中全会通过的文件。注意\"十八届\"→2014年，\"依法治国\"→四中。\n• C（✅）：2024年7月15-18日，二十届三中全会通过。关键词\"进一步全面深化改革\"+ \"中国式现代化\"。\n• D：2018年十九届三中全会通过的文件。注意\"深化党和国家机构改革\"→三中全会改革议题，但这是十九届而非二十届。", "exam_hint": "【考情提示】三支一扶必考！记住规律：三中全会=改革。选项经常混搭不同届次的文件，需要看清\"届次\"。", "mnemonic": "【记忆口诀】\"三中全会议改革，二十届推现代化；四中依法治国务，五中全会定规划\"", "_id": "2026-08-13-merged-4", "question_id": "2026-08-13-merged-4"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "习近平总书记强调，（ ）是全面建设社会主义现代化国家的首要任务。", "options": {"A": "全面深化改革", "B": "高质量发展", "C": "共同富裕", "D": "全面依法治国"}, "answer": "B", "explanation": "【正确答案】B（高质量发展）\n\n【术语拆解】\n• 「首要任务」：排在第一位、最重要的任务。不是\"重要任务\"也不是\"根本任务\"，而是\"首要\"——意味着在所有任务中这是第一位的。\n• 「全面建设社会主义现代化国家」：党的二十大（2022年10月）确立的中心任务，目标是到本世纪中叶把我国建成富强民主文明和谐美丽的社会主义现代化强国。\n\n【选项辨析——区分四个概念的定位】\n• A 全面深化改革：定位是\"根本动力\"——改革是推动发展的动力来源，但不是\"首要任务\"。\n• B 高质量发展（✅）：党的二十大报告原文——\"高质量发展是全面建设社会主义现代化国家的首要任务。\"记住：发展是第一要务，高质量是首要任务。\n• C 共同富裕：定位是\"中国特色社会主义的本质要求\"——讲的是社会主义的\"性质\"，不是\"任务\"。\n• D 全面依法治国：定位是\"国家治理的一场深刻革命\"——讲的是治理方式，不是经济任务。\n\n【考情提示】这是\"帽子题\"——考概念的准确定位。考试会把不同概念的\"帽子\"互相对调来出干扰项。建议把\"高质量发展→首要任务\"\"全面深化改革→根本动力\"一起记忆。\n【记忆口诀】\"质量首要改动力，共同富裕是本质\"", "correct_answer": "【正确答案】B（高质量发展）", "term_breakdown": "【术语拆解】\n• 「首要任务」：排在第一位、最重要的任务。不是\"重要任务\"也不是\"根本任务\"，而是\"首要\"——意味着在所有任务中这是第一位的。\n• 「全面建设社会主义现代化国家」：党的二十大（2022年10月）确立的中心任务，目标是到本世纪中叶把我国建成富强民主文明和谐美丽的社会主义现代化强国。", "option_analysis": "【选项辨析——区分四个概念的定位】\n• A 全面深化改革：定位是\"根本动力\"——改革是推动发展的动力来源，但不是\"首要任务\"。\n• B 高质量发展（✅）：党的二十大报告原文——\"高质量发展是全面建设社会主义现代化国家的首要任务。\"记住：发展是第一要务，高质量是首要任务。\n• C 共同富裕：定位是\"中国特色社会主义的本质要求\"——讲的是社会主义的\"性质\"，不是\"任务\"。\n• D 全面依法治国：定位是\"国家治理的一场深刻革命\"——讲的是治理方式，不是经济任务。", "exam_hint": "【考情提示】这是\"帽子题\"——考概念的准确定位。考试会把不同概念的\"帽子\"互相对调来出干扰项。建议把\"高质量发展→首要任务\"\"全面深化改革→根本动力\"一起记忆。", "mnemonic": "【记忆口诀】\"质量首要改动力，共同富裕是本质\"", "_id": "2026-08-13-merged-5", "question_id": "2026-08-13-merged-5"}, {"type": "单选题", "module": "时政热点", "difficulty": 4, "stem": "2025年《政府工作报告》提出实施适度宽松的货币政策。下列关于\"适度宽松的货币政策\"的理解，正确的是（ ）。", "options": {"A": "这是我国自2011年以来首次提出\"适度宽松\"的货币政策取向", "B": "适度宽松意味着央行将大幅降低存款准备金率至5%以下", "C": "适度宽松的货币政策意味着不再强调防范金融风险", "D": "适度宽松等同于量化宽松，即大量购买国债释放流动性"}, "answer": "A", "explanation": "【正确答案】A\n\n【术语拆解】\n• 「货币政策」：中央银行为实现宏观经济目标而采取的调节货币供应量和利率的措施。由中国人民银行（央行）执行。\n• 「适度宽松」：货币政策的取向之一。中国的货币政策取向分五档：从紧→适度从紧→稳健→适度宽松→宽松。2025年之前，中国自2011年以来连续14年实行\"稳健\"的货币政策。\n• 「存款准备金率」：商业银行必须存到央行的准备金占存款总额的比例。降准=释放流动性（\"放水\"），升准=收回流动性。\n• 「量化宽松（QE）」：央行通过购买国债等金融资产向市场注入大量流动性，是极端宽松手段。美国2008年金融危机和2020年疫情后大量使用QE。\n\n【选项辨析】\n• A（✅）：2024年12月中央经济工作会议提出2025年实施\"适度宽松的货币政策\"，确实结束了连续14年的\"稳健\"基调。上一次\"适度宽松\"是2009-2010年应对全球金融危机时期，距今已14年。\n• B：\"适度宽松\"不等于降准至5%以下。政策幅度需要\"适度\"，根据经济形势灵活把握，没有硬性数值。\n• C：货币政策宽松与防范金融风险不矛盾。越是放水越要防范资金空转和资产泡沫，二者必须同时抓。\n• D：适度宽松≠量化宽松。这是两个完全不同的概念层级。中国尚未采取过QE，\"适度宽松\"仍属于常规货币政策框架内的调整。\n\n【考情提示】\"货币政策转向\"是2025年的超级热点。注意区分\"稳健\"（2011-2024）和\"适度宽松\"（2025起）的时间分界点。\n【记忆口诀】\"十一到二四稳当先，二五宽松开新篇\"", "correct_answer": "【正确答案】A", "term_breakdown": "【术语拆解】\n• 「货币政策」：中央银行为实现宏观经济目标而采取的调节货币供应量和利率的措施。由中国人民银行（央行）执行。\n• 「适度宽松」：货币政策的取向之一。中国的货币政策取向分五档：从紧→适度从紧→稳健→适度宽松→宽松。2025年之前，中国自2011年以来连续14年实行\"稳健\"的货币政策。\n• 「存款准备金率」：商业银行必须存到央行的准备金占存款总额的比例。降准=释放流动性（\"放水\"），升准=收回流动性。\n• 「量化宽松（QE）」：央行通过购买国债等金融资产向市场注入大量流动性，是极端宽松手段。美国2008年金融危机和2020年疫情后大量使用QE。", "option_analysis": "【选项辨析】\n• A（✅）：2024年12月中央经济工作会议提出2025年实施\"适度宽松的货币政策\"，确实结束了连续14年的\"稳健\"基调。上一次\"适度宽松\"是2009-2010年应对全球金融危机时期，距今已14年。\n• B：\"适度宽松\"不等于降准至5%以下。政策幅度需要\"适度\"，根据经济形势灵活把握，没有硬性数值。\n• C：货币政策宽松与防范金融风险不矛盾。越是放水越要防范资金空转和资产泡沫，二者必须同时抓。\n• D：适度宽松≠量化宽松。这是两个完全不同的概念层级。中国尚未采取过QE，\"适度宽松\"仍属于常规货币政策框架内的调整。", "exam_hint": "【考情提示】\"货币政策转向\"是2025年的超级热点。注意区分\"稳健\"（2011-2024）和\"适度宽松\"（2025起）的时间分界点。", "mnemonic": "【记忆口诀】\"十一到二四稳当先，二五宽松开新篇\"", "_id": "2026-08-13-merged-6", "question_id": "2026-08-13-merged-6"}, {"type": "单选题", "module": "时政热点", "difficulty": 4, "stem": "2025年中央一号文件提出要\"着力壮大县域富民产业\"。下列做法最能体现这一要求的是（ ）。", "options": {"A": "将农民大规模迁移至城市务工，增加工资性收入", "B": "发展乡村特色产业，完善联农带农机制，让农民更多分享产业增值收益", "C": "依靠财政转移支付直接提高农民收入", "D": "推动大型工业企业到县域布局重化工业"}, "answer": "B", "explanation": "【正确答案】B\n\n【术语拆解】\n• 「县域」：以县级行政区划为单位的经济区域。中国有2800多个县级行政单位，县域经济是国民经济的基本单元。\n• 「富民产业」：能够带动当地居民（尤其是农民）增收致富的产业。重点：一是\"富\"（增收效果），二是\"产业\"（可持续、有市场竞争力，不是纯补贴）。\n• 「联农带农机制」：让农业产业链上的企业与农民建立利益联结关系。例如：\"公司+合作社+农户\"模式，企业提供技术、加工、销售，农户提供种植、养殖，双方按约定分享收益。\n\n【选项辨析】\n• A：农民进城务工是增收途径之一，但这属于\"劳动力转移\"而非\"县域富民产业\"。题目问的是产业层面的做法。\n• B（✅）：直接对应一号文件原文。关键词\"特色产业\"+\"联农带农\"+\"分享增值收益\"完全匹配。\n• C：财政转移支付是\"输血\"，不具有可持续性。\"富民产业\"是\"造血\"机制。\n• D：重化工业（钢铁、石化等）高耗能、高污染，不符合绿色发展理念，也不是大多数县域的产业优势。\n\n【考情提示】三支一扶重点！\"县域富民产业\"和\"联农带农机制\"是三支一扶面试和笔试都爱考的农业农村热点。\n【记忆口诀】\"县域富民靠产业，联农带农分收益\"", "correct_answer": "【正确答案】B", "term_breakdown": "【术语拆解】\n• 「县域」：以县级行政区划为单位的经济区域。中国有2800多个县级行政单位，县域经济是国民经济的基本单元。\n• 「富民产业」：能够带动当地居民（尤其是农民）增收致富的产业。重点：一是\"富\"（增收效果），二是\"产业\"（可持续、有市场竞争力，不是纯补贴）。\n• 「联农带农机制」：让农业产业链上的企业与农民建立利益联结关系。例如：\"公司+合作社+农户\"模式，企业提供技术、加工、销售，农户提供种植、养殖，双方按约定分享收益。", "option_analysis": "【选项辨析】\n• A：农民进城务工是增收途径之一，但这属于\"劳动力转移\"而非\"县域富民产业\"。题目问的是产业层面的做法。\n• B（✅）：直接对应一号文件原文。关键词\"特色产业\"+\"联农带农\"+\"分享增值收益\"完全匹配。\n• C：财政转移支付是\"输血\"，不具有可持续性。\"富民产业\"是\"造血\"机制。\n• D：重化工业（钢铁、石化等）高耗能、高污染，不符合绿色发展理念，也不是大多数县域的产业优势。", "exam_hint": "【考情提示】三支一扶重点！\"县域富民产业\"和\"联农带农机制\"是三支一扶面试和笔试都爱考的农业农村热点。", "mnemonic": "【记忆口诀】\"县域富民靠产业，联农带农分收益\"", "_id": "2026-08-13-merged-7", "question_id": "2026-08-13-merged-7"}, {"type": "单选题", "module": "时政热点", "difficulty": 4, "stem": "新质生产力的特点是创新，关键在质优，本质是先进生产力。下列选项中，最符合\"发展新质生产力\"要求的是（ ）。", "options": {"A": "某地大规模扩建传统水泥生产线以提高产能", "B": "某企业引进人工智能技术对生产流程进行数字化改造", "C": "某地区通过低价出让土地吸引低端制造业集聚", "D": "某公司通过延长工人劳动时间增加产量"}, "answer": "B", "explanation": "【正确答案】B\n\n【术语拆解】\n• 「新质生产力」三要素：①特点是创新（核心驱动力是科技创新，不是要素投入）②关键在质优（追求的是\"质\"的提升而非单纯的\"量\"的扩张）③本质是先进生产力（代表生产力发展方向，淘汰落后产能）。\n• 「数字化改造」：利用数字技术（AI、大数据、物联网等）改造传统生产流程，提高效率和质量。这本身就是\"新质生产力\"的应用场景。\n\n【选项辨析】\n• A：扩建传统水泥生产线是传统生产力的\"量的扩张\"，没有技术创新，没有质的提升，不属于新质生产力。\n• B（✅）：AI技术+生产流程改造=科技创新推动产业升级，恰好体现\"创新驱动\"+\"质优\"。\n• C：低价土地吸引低端产业是旧的竞争模式（要素驱动），不符合\"创新\"和\"质优\"的要求。\n• D：延长工时=粗放式增长。新质生产力的本质是用技术提高效率，替代人力和时间的简单堆砌。\n\n【考情提示】\"新质生产力\"是2025年各类型考试的超级热点。三要素\"特点是创新、关键在质优、本质是先进生产力\"必须背下来，可用于单选题、多选题和材料分析。\n【记忆口诀】\"新质三要素：创新是特点，质优是关键，先进是本质\"", "correct_answer": "【正确答案】B", "term_breakdown": "【术语拆解】\n• 「新质生产力」三要素：①特点是创新（核心驱动力是科技创新，不是要素投入）②关键在质优（追求的是\"质\"的提升而非单纯的\"量\"的扩张）③本质是先进生产力（代表生产力发展方向，淘汰落后产能）。\n• 「数字化改造」：利用数字技术（AI、大数据、物联网等）改造传统生产流程，提高效率和质量。这本身就是\"新质生产力\"的应用场景。", "option_analysis": "【选项辨析】\n• A：扩建传统水泥生产线是传统生产力的\"量的扩张\"，没有技术创新，没有质的提升，不属于新质生产力。\n• B（✅）：AI技术+生产流程改造=科技创新推动产业升级，恰好体现\"创新驱动\"+\"质优\"。\n• C：低价土地吸引低端产业是旧的竞争模式（要素驱动），不符合\"创新\"和\"质优\"的要求。\n• D：延长工时=粗放式增长。新质生产力的本质是用技术提高效率，替代人力和时间的简单堆砌。", "exam_hint": "【考情提示】\"新质生产力\"是2025年各类型考试的超级热点。三要素\"特点是创新、关键在质优、本质是先进生产力\"必须背下来，可用于单选题、多选题和材料分析。", "mnemonic": "【记忆口诀】\"新质三要素：创新是特点，质优是关键，先进是本质\"", "_id": "2026-08-13-merged-8", "question_id": "2026-08-13-merged-8"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "2024年12月召开的中央经济工作会议确定的2025年经济工作九项重点任务之首是（ ）。", "options": {"A": "以科技创新引领新质生产力发展", "B": "有效防范化解重点领域风险", "C": "大力提振消费、提高投资效益，全方位扩大国内需求", "D": "统筹推进新型城镇化和乡村全面振兴"}, "answer": "C", "explanation": "【正确答案】C\n\n【术语拆解】\n• 「中央经济工作会议」：每年12月召开，总结当年经济工作，部署下一年经济任务。是判断下一年经济政策走向的最重要会议。\n• 「九项重点任务」：2024年12月会议提出2025年经济工作九大重点任务，有明确的排序。排在第一位的是最紧迫、最重要的任务。\n• 「扩大内需」：内需=消费+投资。中国面临的核心挑战是消费不足，所以2025年头号任务是\"大力提振消费\"。\n\n【完整九项任务排序】\n① 大力提振消费、提高投资效益，全方位扩大国内需求 ← 本题答案\n② 以科技创新引领新质生产力发展，建设现代化产业体系\n③ 发挥经济体制改革牵引作用，推动标志性改革举措落地见效\n④ 扩大高水平对外开放，稳外贸稳外资\n⑤ 有效防范化解重点领域风险（注意：风险防范排在第五位，说明2025年更侧重\"发展\"而非\"防风险\"）\n⑥ 统筹推进新型城镇化和乡村全面振兴\n⑦ 加大区域战略实施力度\n⑧ 协同推进降碳减污扩绿增长\n⑨ 加大保障和改善民生力度\n\n【选项辨析】\n• A（❌）：\"以科技创新引领新质生产力发展\"位列2025年经济工作九项重点任务第②项。发展新质生产力虽属重要任务，但并非\"之首\"。\n• B（❌）：\"有效防范化解重点领域风险\"排在九项任务第⑤位——2024年12月中央经济工作会议将风险防范置于第⑤项，体现2025年更侧重\"发展\"而非\"防风险\"，不居首位。\n• C（✅）：\"大力提振消费、提高投资效益，全方位扩大国内需求\"正是2024年12月中央经济工作会议确定的2025年经济工作九项重点任务之首。内需=消费+投资，2025年头号任务即\"大力提振消费\"。\n• D（❌）：\"统筹推进新型城镇化和乡村全面振兴\"是九项任务第⑥项，不居首位。\n\n【考情提示】\"排序题\"是高频考点！只记前三位的顺序：①扩内需 ②新质生产力 ③改革。第一位\"扩内需\"最容易考。\n【记忆口诀】\"二五任务九项全，扩大内需排最前\"", "correct_answer": "【正确答案】C", "term_breakdown": "【术语拆解】\n• 「中央经济工作会议」：每年12月召开，总结当年经济工作，部署下一年经济任务。是判断下一年经济政策走向的最重要会议。\n• 「九项重点任务」：2024年12月会议提出2025年经济工作九大重点任务，有明确的排序。排在第一位的是最紧迫、最重要的任务。\n• 「扩大内需」：内需=消费+投资。中国面临的核心挑战是消费不足，所以2025年头号任务是\"大力提振消费\"。\n\n【完整九项任务排序】\n① 大力提振消费、提高投资效益，全方位扩大国内需求 ← 本题答案\n② 以科技创新引领新质生产力发展，建设现代化产业体系\n③ 发挥经济体制改革牵引作用，推动标志性改革举措落地见效\n④ 扩大高水平对外开放，稳外贸稳外资\n⑤ 有效防范化解重点领域风险（注意：风险防范排在第五位，说明2025年更侧重\"发展\"而非\"防风险\"）\n⑥ 统筹推进新型城镇化和乡村全面振兴\n⑦ 加大区域战略实施力度\n⑧ 协同推进降碳减污扩绿增长\n⑨ 加大保障和改善民生力度", "option_analysis": "【选项辨析】\n• A（❌）：\"以科技创新引领新质生产力发展\"位列2025年经济工作九项重点任务第②项。发展新质生产力虽属重要任务，但并非\"之首\"。\n• B（❌）：\"有效防范化解重点领域风险\"排在九项任务第⑤位——2024年12月中央经济工作会议将风险防范置于第⑤项，体现2025年更侧重\"发展\"而非\"防风险\"，不居首位。\n• C（✅）：\"大力提振消费、提高投资效益，全方位扩大国内需求\"正是2024年12月中央经济工作会议确定的2025年经济工作九项重点任务之首。内需=消费+投资，2025年头号任务即\"大力提振消费\"。\n• D（❌）：\"统筹推进新型城镇化和乡村全面振兴\"是九项任务第⑥项，不居首位。", "exam_hint": "【考情提示】\"排序题\"是高频考点！只记前三位的顺序：①扩内需 ②新质生产力 ③改革。第一位\"扩内需\"最容易考。", "mnemonic": "【记忆口诀】\"二五任务九项全，扩大内需排最前\"", "_id": "2026-08-13-merged-9", "question_id": "2026-08-13-merged-9"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "党的二十届三中全会提出，到（ ）年中华人民共和国成立八十周年时，完成《决定》提出的改革任务。", "options": {"A": "2029", "B": "2030", "C": "2035", "D": "2049"}, "answer": "A", "explanation": "【正确答案】A（2029年）\n\n【术语拆解】\n• 「中华人民共和国成立八十周年」：1949年10月1日新中国成立→+80年=2029年。这是计算本题的关键。\n• 「《决定》」：二十届三中全会通过的《中共中央关于进一步全面深化改革、推进中国式现代化的决定》。该文件规划了未来五年的改革路线图。\n\n【关键时间节点对比（高频考点）】\n• 2029年（✅）：新中国成立80周年，完成二十届三中全会改革任务。注意：距离2024年开会是5年时间窗口。\n• 2030年：碳达峰目标年份（2030年前实现碳达峰）。\n• 2035年：基本实现社会主义现代化远景目标年份，也是建成高水平社会主义市场经济体制的目标年。\n• 2049年：新中国成立100周年，全面建成社会主义现代化强国。这是\"第二个百年奋斗目标\"的实现年份。\n\n【选项辨析】\n• A（✅）：正确。\n• B 2030：与碳达峰目标混淆。\n• C 2035：与\"基本实现现代化\"目标混淆。注意2035也是\"十四五\"规划和2035年远景目标纲要的终点。\n• D 2049：与\"建国一百年\"目标混淆。\n\n【考情提示】三支一扶考试爱考\"年份对应事件\"。建议把2029/2030/2035/2049四个关键节点与对应事件制成表格记忆。\n【记忆口诀】\"二九完成改革，三五基本现代，四九全面强国\"", "correct_answer": "【正确答案】A（2029年）", "term_breakdown": "【术语拆解】\n• 「中华人民共和国成立八十周年」：1949年10月1日新中国成立→+80年=2029年。这是计算本题的关键。\n• 「《决定》」：二十届三中全会通过的《中共中央关于进一步全面深化改革、推进中国式现代化的决定》。该文件规划了未来五年的改革路线图。\n\n【关键时间节点对比（高频考点）】\n• 2029年（✅）：新中国成立80周年，完成二十届三中全会改革任务。注意：距离2024年开会是5年时间窗口。\n• 2030年：碳达峰目标年份（2030年前实现碳达峰）。\n• 2035年：基本实现社会主义现代化远景目标年份，也是建成高水平社会主义市场经济体制的目标年。\n• 2049年：新中国成立100周年，全面建成社会主义现代化强国。这是\"第二个百年奋斗目标\"的实现年份。", "option_analysis": "【选项辨析】\n• A（✅）：正确。\n• B 2030：与碳达峰目标混淆。\n• C 2035：与\"基本实现现代化\"目标混淆。注意2035也是\"十四五\"规划和2035年远景目标纲要的终点。\n• D 2049：与\"建国一百年\"目标混淆。", "exam_hint": "【考情提示】三支一扶考试爱考\"年份对应事件\"。建议把2029/2030/2035/2049四个关键节点与对应事件制成表格记忆。", "mnemonic": "【记忆口诀】\"二九完成改革，三五基本现代，四九全面强国\"", "_id": "2026-08-13-merged-10", "question_id": "2026-08-13-merged-10"}, {"type": "单选题", "module": "时政热点", "difficulty": 5, "stem": "某县计划落实2025年《政府工作报告》中关于\"全方位扩大国内需求\"的部署。下列举措中最直接体现该政策导向的是（ ）。", "options": {"A": "加大出口退税力度，支持企业拓展海外市场", "B": "发放消费券、推动以旧换新，激发居民消费潜力", "C": "大幅增加政府机关行政编制，扩大财政供养人员规模", "D": "限制电商平台发展，强制居民回归线下消费"}, "answer": "B", "explanation": "【正确答案】B\n\n【术语拆解】\n• 「全方位扩大国内需求」：2025年政府工作报告将\"全方位扩大国内需求\"列为2025年经济工作任务之首。\"全方位\"意味着不只靠一种手段，而是消费、投资、政府支出多管齐下。\n• 「消费券」：政府向居民发放的、可在指定期限内用于消费的补贴凭证，是短期内刺激消费最直接的工具。\n• 「以旧换新」：消费者将旧家电/汽车等交给商家，在购买新品时获得折扣。2025年安排超长期特别国债3000亿元专门支持消费品以旧换新。\n• 「国内需求（内需）」：与\"外需\"（出口）相对，包括消费需求和投资需求。\n\n【选项辨析】\n• A：出口退税刺激的是外需（出口），而题目问的是\"扩大国内需求\"，方向相反。考场上注意看清\"国内\"二字！\n• B（✅）：消费券+以旧换新→直接刺激居民消费→扩大内需。是最直接有效的落地举措。\n• C：增加行政编制属于扩大政府消费/支出，但行政编制扩张与国务院\"精兵简政\"改革方向矛盾，且并非扩大内需的主要手段。\n• D：限制电商违背市场规律和数字经济发展方向，且会损害消费者利益和消费体验，适得其反。\n\n【考情提示】\"需求侧\"考点近年频出。记住三条线：内需=消费+投资，外需=出口。扩大内需主要靠消费（不是投资！2025年定调\"消费优先于投资\"）。\n【记忆口诀】\"内需消费券，外需出口单，方向别看反\"", "correct_answer": "【正确答案】B", "term_breakdown": "【术语拆解】\n• 「全方位扩大国内需求」：2025年政府工作报告将\"全方位扩大国内需求\"列为2025年经济工作任务之首。\"全方位\"意味着不只靠一种手段，而是消费、投资、政府支出多管齐下。\n• 「消费券」：政府向居民发放的、可在指定期限内用于消费的补贴凭证，是短期内刺激消费最直接的工具。\n• 「以旧换新」：消费者将旧家电/汽车等交给商家，在购买新品时获得折扣。2025年安排超长期特别国债3000亿元专门支持消费品以旧换新。\n• 「国内需求（内需）」：与\"外需\"（出口）相对，包括消费需求和投资需求。", "option_analysis": "【选项辨析】\n• A：出口退税刺激的是外需（出口），而题目问的是\"扩大国内需求\"，方向相反。考场上注意看清\"国内\"二字！\n• B（✅）：消费券+以旧换新→直接刺激居民消费→扩大内需。是最直接有效的落地举措。\n• C：增加行政编制属于扩大政府消费/支出，但行政编制扩张与国务院\"精兵简政\"改革方向矛盾，且并非扩大内需的主要手段。\n• D：限制电商违背市场规律和数字经济发展方向，且会损害消费者利益和消费体验，适得其反。", "exam_hint": "【考情提示】\"需求侧\"考点近年频出。记住三条线：内需=消费+投资，外需=出口。扩大内需主要靠消费（不是投资！2025年定调\"消费优先于投资\"）。", "mnemonic": "【记忆口诀】\"内需消费券，外需出口单，方向别看反\"", "_id": "2026-08-13-merged-11", "question_id": "2026-08-13-merged-11"}, {"type": "多选题", "module": "时政热点", "difficulty": 4, "stem": "2025年《政府工作报告》提出了2025年经济社会发展的主要预期目标。下列选项中属于这些目标的有（ ）。", "options": {"A": "居民消费价格涨幅2%左右", "B": "城镇新增就业1200万人以上", "C": "单位国内生产总值能耗降低5%左右", "D": "粮食产量1.4万亿斤左右"}, "answer": "ABD", "explanation": "【正确答案】ABD\n\n【术语拆解】\n• 「居民消费价格（CPI）」：衡量一篮子消费品和服务价格变动的指数。CPI涨幅2%左右是温和通胀目标（太低→通缩风险，太高→民生压力）。\n• 「城镇新增就业」：全年城镇新增就业人数目标。就业是\"最大的民生\"，1200万人以上是一个相当高的目标。\n• 「单位GDP能耗」：每生产1单位GDP消耗的能源量，反映经济\"含绿量\"。目标是\"降低3%左右\"不是5%。\n• 「粮食产量」：粮食总产量。1.4万亿斤是中国粮食产量的\"安全底线\"，2024年已首次站上1.4万亿斤台阶。\n\n【选项辨析】\n• A（✅）：2025年CPI目标2%左右，与2024年目标一致。\n• B（✅）：城镇新增就业目标1200万人以上。\n• C（❌）：报告原文是\"单位国内生产总值能耗降低3%左右\"，不是5%。数字陷阱是考试常见套路！\n• D（✅）：粮食产量1.4万亿斤左右，首次将粮食产量目标设为\"左右\"而非\"以上\"，留有一定弹性。\n\n【考情提示】多选题最常考的陷阱就是\"改数字\"。把3%改成5%、把1200万改成1000万等。做多选题时一定要对数字高度敏感。本题为多选题，三支一扶考试中多选/少选/错选均不得分！\n【记忆口诀】\"价涨二就增一二（2%·1200万），能耗降三粮万四（3%·1.4万亿斤）\"", "correct_answer": "【正确答案】ABD", "term_breakdown": "【术语拆解】\n• 「居民消费价格（CPI）」：衡量一篮子消费品和服务价格变动的指数。CPI涨幅2%左右是温和通胀目标（太低→通缩风险，太高→民生压力）。\n• 「城镇新增就业」：全年城镇新增就业人数目标。就业是\"最大的民生\"，1200万人以上是一个相当高的目标。\n• 「单位GDP能耗」：每生产1单位GDP消耗的能源量，反映经济\"含绿量\"。目标是\"降低3%左右\"不是5%。\n• 「粮食产量」：粮食总产量。1.4万亿斤是中国粮食产量的\"安全底线\"，2024年已首次站上1.4万亿斤台阶。", "option_analysis": "【选项辨析】\n• A（✅）：2025年CPI目标2%左右，与2024年目标一致。\n• B（✅）：城镇新增就业目标1200万人以上。\n• C（❌）：报告原文是\"单位国内生产总值能耗降低3%左右\"，不是5%。数字陷阱是考试常见套路！\n• D（✅）：粮食产量1.4万亿斤左右，首次将粮食产量目标设为\"左右\"而非\"以上\"，留有一定弹性。", "exam_hint": "【考情提示】多选题最常考的陷阱就是\"改数字\"。把3%改成5%、把1200万改成1000万等。做多选题时一定要对数字高度敏感。本题为多选题，三支一扶考试中多选/少选/错选均不得分！", "mnemonic": "【记忆口诀】\"价涨二就增一二（2%·1200万），能耗降三粮万四（3%·1.4万亿斤）\"", "_id": "2026-08-13-merged-12", "question_id": "2026-08-13-merged-12"}, {"type": "多选题", "module": "时政热点", "difficulty": 3, "stem": "2025年中央一号文件强调要守牢的\"两条底线\"包括（ ）。", "options": {"A": "确保国家粮食安全", "B": "确保不发生规模性返贫致贫", "C": "确保农民收入年均增长8%以上", "D": "确保城镇化率达到75%以上"}, "answer": "AB", "explanation": "【正确答案】AB\n\n【术语拆解】\n• 「两条底线」：乡村振兴工作中必须守住的\"红线\"，一旦触碰就是工作失误。2025年一号文件明确的\"两条底线\"是：①确保国家粮食安全 ②确保不发生规模性返贫致贫。\n• 「规模性返贫」：与\"个别返贫\"相对。指的是成片区域、大量人口同时返贫。2020年脱贫后有部分脱贫人口基础不稳，遇到大病/灾害容易返贫。\n• 「粮食安全」：\"中国人的饭碗要牢牢端在自己手中\"。核心指标是粮食播种面积稳定在17.7亿亩以上、产量1.4万亿斤左右。\n\n【选项辨析】\n• A（✅）：第一条底线，记住\"粮\"字。\n• B（✅）：第二条底线，记住\"贫\"字。2025年的表述是\"返贫致贫\"（相比2024年的\"返贫\"，多了\"致贫\"二字，覆盖更广）。\n• C（❌）：文件未设定农民收入8%增长硬指标。这类\"具体数字+具体名词\"的选项往往是干扰项。\n• D（❌）：文件没有设定75%的城镇化率目标。\n\n【考情提示】\"两条底线\"是2025年一号文件最基础的知识点，几乎100%会出现在三支一扶考试中。记住：底线=粮食+防返贫。\n【记忆口诀】\"三农底线就两条：粮食安全第一条，返贫致贫不能要\"", "correct_answer": "【正确答案】AB", "term_breakdown": "【术语拆解】\n• 「两条底线」：乡村振兴工作中必须守住的\"红线\"，一旦触碰就是工作失误。2025年一号文件明确的\"两条底线\"是：①确保国家粮食安全 ②确保不发生规模性返贫致贫。\n• 「规模性返贫」：与\"个别返贫\"相对。指的是成片区域、大量人口同时返贫。2020年脱贫后有部分脱贫人口基础不稳，遇到大病/灾害容易返贫。\n• 「粮食安全」：\"中国人的饭碗要牢牢端在自己手中\"。核心指标是粮食播种面积稳定在17.7亿亩以上、产量1.4万亿斤左右。", "option_analysis": "【选项辨析】\n• A（✅）：第一条底线，记住\"粮\"字。\n• B（✅）：第二条底线，记住\"贫\"字。2025年的表述是\"返贫致贫\"（相比2024年的\"返贫\"，多了\"致贫\"二字，覆盖更广）。\n• C（❌）：文件未设定农民收入8%增长硬指标。这类\"具体数字+具体名词\"的选项往往是干扰项。\n• D（❌）：文件没有设定75%的城镇化率目标。", "exam_hint": "【考情提示】\"两条底线\"是2025年一号文件最基础的知识点，几乎100%会出现在三支一扶考试中。记住：底线=粮食+防返贫。", "mnemonic": "【记忆口诀】\"三农底线就两条：粮食安全第一条，返贫致贫不能要\"", "_id": "2026-08-13-merged-13", "question_id": "2026-08-13-merged-13"}, {"type": "不定项选择题", "module": "时政热点", "difficulty": 5, "stem": "某乡镇在推进乡村振兴过程中，采取了以下措施：①引入龙头企业，发展农产品深加工，建立\"公司+合作社+农户\"的利益联结机制；②实施农村人居环境整治，推进厕所革命和污水处理；③建立防止返贫动态监测机制，对易返贫人口早发现、早干预、早帮扶；④鼓励村民将全部耕地流转给外来资本建设高尔夫球场。从落实2025年中央一号文件精神的角度分析，下列说法正确的有（ ）。", "options": {"A": "措施①符合\"着力壮大县域富民产业\"中\"完善联农带农机制\"的要求", "B": "措施②符合\"着力推进乡村建设\"中\"深入实施农村人居环境整治提升行动\"的要求", "C": "措施③符合\"持续巩固拓展脱贫攻坚成果\"中\"守牢不发生规模性返贫致贫底线\"的要求", "D": "措施④符合\"健全要素保障和优化配置体制机制\"中盘活农村土地资源的要求", "E": "措施①③均体现了守住\"两条底线\"的工作要求"}, "answer": "ABC", "explanation": "【正确答案】ABC\n\n【术语拆解】\n• 「\"公司+合作社+农户\"利益联结机制」：2025年中央一号文件强调的\"联农带农机制\"典型形式——龙头企业负责加工、销售，合作社居中组织，农户负责种养，三方按约定分享产业链增值收益，是\"着力壮大县域富民产业\"的重要抓手。\n• 「农村人居环境整治提升行动」：一号文件\"着力推进乡村建设\"部署的重要内容，核心包括厕所革命、生活污水和垃圾治理、村容村貌提升等，本题措施②（厕所革命+污水处理）即属此类。\n• 「防止返贫动态监测机制」：对脱贫不稳定户、边缘易致贫户等做到\"早发现、早干预、早帮扶\"，守住\"不发生规模性返贫致贫\"底线（\"两条底线\"之一）。\n• 「耕地\"非农化\"与\"非粮化\"」：耕地保护红线要求——坚决遏制耕地\"非农化\"（改变耕地用途搞非农建设，如违规建高尔夫球场）、防止\"非粮化\"（种树挖塘等改变种粮用途），18亿亩耕地红线不可触碰。\n【题型说明】不定项选择题=可能只有1个正确，也可能有多个正确。三支一扶2025年新增题型，多选/少选/错选均不得分，难度最大！\n\n【选项辨析】（逐项排查）\n• A（✅正确）：\"公司+合作社+农户\"模式是2025年一号文件强调的\"联农带农机制\"的典型形式。龙头企业负责加工和销售，合作社居中协调，农户负责种植养殖→三方分享产业链增值收益。\n• B（✅正确）：厕所革命、污水处理是\"农村人居环境整治提升行动\"的核心内容。注意\"厕所革命\"是习近平总书记亲自推动的民生工程。\n• C（✅正确）：\"早发现、早干预、早帮扶\"的\"三早\"机制是一号文件中防止返贫动态监测的具体要求。\n• D（❌错误→关键陷阱）：①一号文件反复强调\"坚决遏制耕地'非农化'、防止'非粮化'\"，建设高尔夫球场是典型的\"非农化\"，属于严重违法违规行为。②耕地保护的红线是18亿亩，任何占用耕地的非农建设都要严格审批。③\"盘活\"是指提高土地利用效率，不是改变耕地用途。\n• E（❌错误）：\"两条底线\"仅指粮食安全+不发生规模性返贫致贫。措施①属于产业发展范畴，虽然有助于农民增收，但不是\"两条底线\"的直接体现。措施③对应的是第二条底线。但E选项说的是\"措施①③均体现了\"——由于措施①不能体现，所以E是错的。这里考察的是对\"两条底线\"具体范围的精确理解。\n\n【考情提示】不定项选择题的核心策略：逐项排查！不要凭感觉选。每个选项都要找到文件原文对应或排除。特别当心\"张冠李戴\"型错误（D）和\"以偏概全\"型错误（E）。\n\n【记忆口诀】\"做题先看ABCDE，逐个对照原文找；耕地红线不能碰，两条底线记得牢\"", "correct_answer": "【正确答案】ABC", "term_breakdown": "【术语拆解】\n• 「\"公司+合作社+农户\"利益联结机制」：2025年中央一号文件强调的\"联农带农机制\"典型形式——龙头企业负责加工、销售，合作社居中组织，农户负责种养，三方按约定分享产业链增值收益，是\"着力壮大县域富民产业\"的重要抓手。\n• 「农村人居环境整治提升行动」：一号文件\"着力推进乡村建设\"部署的重要内容，核心包括厕所革命、生活污水和垃圾治理、村容村貌提升等，本题措施②（厕所革命+污水处理）即属此类。\n• 「防止返贫动态监测机制」：对脱贫不稳定户、边缘易致贫户等做到\"早发现、早干预、早帮扶\"，守住\"不发生规模性返贫致贫\"底线（\"两条底线\"之一）。\n• 「耕地\"非农化\"与\"非粮化\"」：耕地保护红线要求——坚决遏制耕地\"非农化\"（改变耕地用途搞非农建设，如违规建高尔夫球场）、防止\"非粮化\"（种树挖塘等改变种粮用途），18亿亩耕地红线不可触碰。\n【题型说明】不定项选择题=可能只有1个正确，也可能有多个正确。三支一扶2025年新增题型，多选/少选/错选均不得分，难度最大！", "option_analysis": "【选项辨析】（逐项排查）\n• A（✅正确）：\"公司+合作社+农户\"模式是2025年一号文件强调的\"联农带农机制\"的典型形式。龙头企业负责加工和销售，合作社居中协调，农户负责种植养殖→三方分享产业链增值收益。\n• B（✅正确）：厕所革命、污水处理是\"农村人居环境整治提升行动\"的核心内容。注意\"厕所革命\"是习近平总书记亲自推动的民生工程。\n• C（✅正确）：\"早发现、早干预、早帮扶\"的\"三早\"机制是一号文件中防止返贫动态监测的具体要求。\n• D（❌错误→关键陷阱）：①一号文件反复强调\"坚决遏制耕地'非农化'、防止'非粮化'\"，建设高尔夫球场是典型的\"非农化\"，属于严重违法违规行为。②耕地保护的红线是18亿亩，任何占用耕地的非农建设都要严格审批。③\"盘活\"是指提高土地利用效率，不是改变耕地用途。\n• E（❌错误）：\"两条底线\"仅指粮食安全+不发生规模性返贫致贫。措施①属于产业发展范畴，虽然有助于农民增收，但不是\"两条底线\"的直接体现。措施③对应的是第二条底线。但E选项说的是\"措施①③均体现了\"——由于措施①不能体现，所以E是错的。这里考察的是对\"两条底线\"具体范围的精确理解。", "exam_hint": "【考情提示】不定项选择题的核心策略：逐项排查！不要凭感觉选。每个选项都要找到文件原文对应或排除。特别当心\"张冠李戴\"型错误（D）和\"以偏概全\"型错误（E）。", "mnemonic": "【记忆口诀】\"做题先看ABCDE，逐个对照原文找；耕地红线不能碰，两条底线记得牢\"", "_id": "2026-08-13-merged-14", "question_id": "2026-08-13-merged-14"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "2025年《政府工作报告》提出，城乡居民基础养老金月最低标准（ ）；居民医保人均财政补助标准再提高（ ）。", "options": {"A": "再提高10元；20元", "B": "再提高20元；30元", "C": "再提高30元；20元", "D": "再提高50元；40元"}, "answer": "B", "explanation": "【正确答案】B（基础养老金月最低标准再提高20元；居民医保人均财政补助标准再提高30元）\n\n【术语拆解】\n• 「城乡居民基础养老金」：面向未参加职工养老保险的城乡居民发放的基本养老待遇，月最低标准由国家统一调整。\n• 「居民医保人均财政补助标准」：政府对参加城乡居民基本医疗保险的参保人人均给予的财政补助，2025年再提高30元。\n\n【选项辨析】\n• A 10元/20元：养老金标准不符，报告为再提高20元。\n• B（✅）：基础养老金+20元、医保补助+30元，与报告原文一致。\n• C 30元/20元：两项数字对调，属张冠李戴。\n• D 50元/40元：无依据，报告未出现此数字。\n\n【考情提示】民生数字是政府工作报告单选细节题的稳定题源，「养老+20、医保+30」是2025年报告新增数字，高频易混，须成对记忆。\n【溯源】2025年3月5日李强总理《政府工作报告》（中国政府网/新华社全文）。\n【记忆口诀】「养老加二十，医保加三十，民生两数字，成对记不混」", "correct_answer": "【正确答案】B（基础养老金月最低标准再提高20元；居民医保人均财政补助标准再提高30元）", "term_breakdown": "【术语拆解】\n• 「城乡居民基础养老金」：面向未参加职工养老保险的城乡居民发放的基本养老待遇，月最低标准由国家统一调整。\n• 「居民医保人均财政补助标准」：政府对参加城乡居民基本医疗保险的参保人人均给予的财政补助，2025年再提高30元。", "option_analysis": "【选项辨析】\n• A 10元/20元：养老金标准不符，报告为再提高20元。\n• B（✅）：基础养老金+20元、医保补助+30元，与报告原文一致。\n• C 30元/20元：两项数字对调，属张冠李戴。\n• D 50元/40元：无依据，报告未出现此数字。", "exam_hint": "【考情提示】民生数字是政府工作报告单选细节题的稳定题源，「养老+20、医保+30」是2025年报告新增数字，高频易混，须成对记忆。\n【溯源】2025年3月5日李强总理《政府工作报告》（中国政府网/新华社全文）。", "mnemonic": "【记忆口诀】「养老加二十，医保加三十，民生两数字，成对记不混」", "_id": "2026-08-13-merged-15", "question_id": "2026-08-13-merged-15"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "2025年《政府工作报告》提出，发行超长期特别国债1.3万亿元，其中（ ）亿元支持\"两重\"建设、（ ）亿元支持\"两新\"工作。", "options": {"A": "8000；5000", "B": "5000；8000", "C": "6000；7000", "D": "10000；3000"}, "answer": "A", "explanation": "【正确答案】A（8000亿元支持\"两重\"建设、5000亿元支持\"两新\"工作）\n\n【术语拆解】\n• 「两重」：国家重大战略实施和重点领域安全能力建设。\n• 「两新」：大规模设备更新和消费品以旧换新。\n• 「超长期特别国债」：期限较长（如20/30/50年）的特别国债，不计入一般公共预算赤字，专项用于特定国家战略。\n\n【选项辨析】\n• A（✅）：8000亿\"两重\"+5000亿\"两新\"，合计1.3万亿元，与报告一致。\n• B：数字对调，\"两重\"是8000亿不是5000亿。\n• C：6000/7000组合无依据。\n• D：10000/3000组合无依据。\n\n【考情提示】国债数字类考点常考\"1.3万亿总额+两重8000亿+两新5000亿\"的精确拆分，多选/单选均可能出现，注意与\"特别国债5000亿元补充银行资本\"区分。\n【溯源】2025年《政府工作报告》\"积极的财政政策\"部分。\n【记忆口诀】「国债一三、两重八、两新五——八加五等于十三」", "correct_answer": "【正确答案】A（8000亿元支持\"两重\"建设、5000亿元支持\"两新\"工作）", "term_breakdown": "【术语拆解】\n• 「两重」：国家重大战略实施和重点领域安全能力建设。\n• 「两新」：大规模设备更新和消费品以旧换新。\n• 「超长期特别国债」：期限较长（如20/30/50年）的特别国债，不计入一般公共预算赤字，专项用于特定国家战略。", "option_analysis": "【选项辨析】\n• A（✅）：8000亿\"两重\"+5000亿\"两新\"，合计1.3万亿元，与报告一致。\n• B：数字对调，\"两重\"是8000亿不是5000亿。\n• C：6000/7000组合无依据。\n• D：10000/3000组合无依据。", "exam_hint": "【考情提示】国债数字类考点常考\"1.3万亿总额+两重8000亿+两新5000亿\"的精确拆分，多选/单选均可能出现，注意与\"特别国债5000亿元补充银行资本\"区分。\n【溯源】2025年《政府工作报告》\"积极的财政政策\"部分。", "mnemonic": "【记忆口诀】「国债一三、两重八、两新五——八加五等于十三」", "_id": "2026-08-13-merged-16", "question_id": "2026-08-13-merged-16"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "党的二十届三中全会提出进一步全面深化改革的\"六个坚持\"原则。下列选项中，不属于\"六个坚持\"的是（ ）。", "options": {"A": "坚持党的全面领导", "B": "坚持以人民为中心", "C": "坚持守正创新", "D": "坚持市场调节一切资源"}, "answer": "D", "explanation": "【正确答案】D（\"坚持市场调节一切资源\"不属于\"六个坚持\"）\n\n【术语拆解】\n• 「六个坚持」：党的二十届三中全会明确的进一步全面深化改革重大原则——坚持党的全面领导、坚持以人民为中心、坚持守正创新、坚持以制度建设为主线、坚持全面依法治国、坚持系统观念。\n\n【选项辨析】\n• A：属于，是改革的首要原则。\n• B：属于，体现改革的价值取向。\n• C：属于，守正创新是改革的方法论要求。\n• D（❌）：表述错误——社会主义市场经济体制是\"市场在资源配置中起决定性作用，更好发挥政府作用\"，不存在\"市场调节一切资源\"的说法。\n\n【考情提示】\"六个坚持\"与\"七个聚焦\"是二十届三中全会多选高频考点，出题方式多为\"下列属于/不属于\"。\n【溯源】《中共中央关于进一步全面深化改革、推进中国式现代化的决定》（2024年7月，新华社全文）。\n【记忆口诀】「领导·人民·守正新，制度·法治·系统观——六坚持缺一不可」", "correct_answer": "【正确答案】D（\"坚持市场调节一切资源\"不属于\"六个坚持\"）", "term_breakdown": "【术语拆解】\n• 「六个坚持」：党的二十届三中全会明确的进一步全面深化改革重大原则——坚持党的全面领导、坚持以人民为中心、坚持守正创新、坚持以制度建设为主线、坚持全面依法治国、坚持系统观念。", "option_analysis": "【选项辨析】\n• A：属于，是改革的首要原则。\n• B：属于，体现改革的价值取向。\n• C：属于，守正创新是改革的方法论要求。\n• D（❌）：表述错误——社会主义市场经济体制是\"市场在资源配置中起决定性作用，更好发挥政府作用\"，不存在\"市场调节一切资源\"的说法。", "exam_hint": "【考情提示】\"六个坚持\"与\"七个聚焦\"是二十届三中全会多选高频考点，出题方式多为\"下列属于/不属于\"。\n【溯源】《中共中央关于进一步全面深化改革、推进中国式现代化的决定》（2024年7月，新华社全文）。", "mnemonic": "【记忆口诀】「领导·人民·守正新，制度·法治·系统观——六坚持缺一不可」", "_id": "2026-08-13-merged-17", "question_id": "2026-08-13-merged-17"}, {"type": "多选题", "module": "时政热点", "difficulty": 4, "stem": "2024年12月中央经济工作会议提出做好经济工作的规律性认识\"五个必须统筹\"。下列选项中，属于\"五个必须统筹\"的有（ ）。", "options": {"A": "必须统筹好有效市场和有为政府的关系", "B": "必须统筹好总供给和总需求的关系", "C": "必须统筹好培育新动能和更新旧动能的关系", "D": "必须统筹好国际国内两个循环的先后关系"}, "answer": "ABC", "explanation": "【正确答案】ABC\n\n【术语拆解】\n• 「五个必须统筹」：2024年12月中央经济工作会议提出的规律性认识——①有效市场和有为政府；②总供给和总需求；③培育新动能和更新旧动能；④做优增量和盘活存量；⑤提升质量和做大总量。\n\n【选项辨析】\n• A：属于，第一对关系。\n• B：属于，第二对关系。\n• C：属于，第三对关系。\n• D（❌）：表述错误——\"五个必须统筹\"中无此表述，且国内国际双循环是\"相互促进\"关系而非\"先后\"关系。\n\n【考情提示】\"五个必须统筹\"是中央经济工作会议最新提法，多选/不定项概率高，须完整记住五对关系，注意与\"九项重点任务\"区分。\n【溯源】2024年12月11日—12日中央经济工作会议公报（新华社）。\n【记忆口诀】「市供新增质——市场、供需、新旧动能、增量存量、质量总量」", "correct_answer": "【正确答案】ABC", "term_breakdown": "【术语拆解】\n• 「五个必须统筹」：2024年12月中央经济工作会议提出的规律性认识——①有效市场和有为政府；②总供给和总需求；③培育新动能和更新旧动能；④做优增量和盘活存量；⑤提升质量和做大总量。", "option_analysis": "【选项辨析】\n• A：属于，第一对关系。\n• B：属于，第二对关系。\n• C：属于，第三对关系。\n• D（❌）：表述错误——\"五个必须统筹\"中无此表述，且国内国际双循环是\"相互促进\"关系而非\"先后\"关系。", "exam_hint": "【考情提示】\"五个必须统筹\"是中央经济工作会议最新提法，多选/不定项概率高，须完整记住五对关系，注意与\"九项重点任务\"区分。\n【溯源】2024年12月11日—12日中央经济工作会议公报（新华社）。", "mnemonic": "【记忆口诀】「市供新增质——市场、供需、新旧动能、增量存量、质量总量」", "_id": "2026-08-13-merged-18", "question_id": "2026-08-13-merged-18"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "2025年《政府工作报告》提出开展\"人工智能+\"行动，并培育一批未来产业。下列选项中，属于报告点名的未来产业的是（ ）。", "options": {"A": "生物制造", "B": "传统房地产业", "C": "低端纺织业", "D": "煤炭采掘业"}, "answer": "A", "explanation": "【正确答案】A（生物制造）\n\n【术语拆解】\n• 「未来产业」：由前沿技术驱动、处于孕育萌发阶段或产业化初期、具有前瞻性和战略性的新兴产业。\n• 报告点名培育的产业方向：生物制造、量子科技、具身智能、6G等未来产业；同时推动商业航天、低空经济等新兴产业安全健康发展。\n\n【选项辨析】\n• A（✅）：生物制造是报告明确提出的未来产业方向之一。\n• B：房地产属于传统领域，报告要求\"止跌回稳\"而非培育未来产业。\n• C：低端纺织业不属于未来产业。\n• D：煤炭采掘属传统能源产业，报告要求\"协同推进降碳减污扩绿增长\"，非培育方向。\n\n【考情提示】\"新质生产力+未来产业\"是2025年报告新增热点，常以\"下列属于未来产业的是\"单选或归类多选出现。\n【溯源】2025年《政府工作报告》\"因地制宜发展新质生产力\"部分。\n【记忆口诀】「生物量子具身智，6G商业低空飞——未来产业一串记」", "correct_answer": "【正确答案】A（生物制造）", "term_breakdown": "【术语拆解】\n• 「未来产业」：由前沿技术驱动、处于孕育萌发阶段或产业化初期、具有前瞻性和战略性的新兴产业。\n• 报告点名培育的产业方向：生物制造、量子科技、具身智能、6G等未来产业；同时推动商业航天、低空经济等新兴产业安全健康发展。", "option_analysis": "【选项辨析】\n• A（✅）：生物制造是报告明确提出的未来产业方向之一。\n• B：房地产属于传统领域，报告要求\"止跌回稳\"而非培育未来产业。\n• C：低端纺织业不属于未来产业。\n• D：煤炭采掘属传统能源产业，报告要求\"协同推进降碳减污扩绿增长\"，非培育方向。", "exam_hint": "【考情提示】\"新质生产力+未来产业\"是2025年报告新增热点，常以\"下列属于未来产业的是\"单选或归类多选出现。\n【溯源】2025年《政府工作报告》\"因地制宜发展新质生产力\"部分。", "mnemonic": "【记忆口诀】「生物量子具身智，6G商业低空飞——未来产业一串记」", "_id": "2026-08-13-merged-19", "question_id": "2026-08-13-merged-19"}, {"type": "单选题", "module": "河南省情", "difficulty": 1, "stem": "河南省的简称和省会分别是（ ）。", "options": {"A": "豫；郑州", "B": "冀；石家庄", "C": "鲁；济南", "D": "皖；合肥"}, "answer": "A", "explanation": "【正确答案】A（豫；郑州）\n\n【术语拆解】\n• 「简称」：省级行政区划的约定俗成简称，河南因大部分地区位于黄河以南而得名\"河南\"，古为豫州之地，故简称\"豫\"。\n• 「省会」：河南省省会为郑州市。\n\n【选项辨析】\n• A（✅）：豫·郑州，正确。\n• B：冀是河北省简称，石家庄是河北省会。\n• C：鲁是山东省简称，济南是山东省会。\n• D：皖是安徽省简称，合肥是安徽省会。\n\n【考情提示】省情基础送分题，\"豫·郑州\"属必背常识；注意与邻省简称区分。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点1（来源：河南省人民政府网）。\n【记忆口诀】「黄河之南简称豫，省会郑州记心里」", "correct_answer": "【正确答案】A（豫；郑州）", "term_breakdown": "【术语拆解】\n• 「简称」：省级行政区划的约定俗成简称，河南因大部分地区位于黄河以南而得名\"河南\"，古为豫州之地，故简称\"豫\"。\n• 「省会」：河南省省会为郑州市。", "option_analysis": "【选项辨析】\n• A（✅）：豫·郑州，正确。\n• B：冀是河北省简称，石家庄是河北省会。\n• C：鲁是山东省简称，济南是山东省会。\n• D：皖是安徽省简称，合肥是安徽省会。", "exam_hint": "【考情提示】省情基础送分题，\"豫·郑州\"属必背常识；注意与邻省简称区分。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点1（来源：河南省人民政府网）。", "mnemonic": "【记忆口诀】「黄河之南简称豫，省会郑州记心里」", "_id": "2026-08-13-merged-20", "question_id": "2026-08-13-merged-20"}, {"type": "单选题", "module": "河南省情", "difficulty": 2, "stem": "中国\"八大古都\"中，河南省独占其四。下列城市中，不属于河南省古都的是（ ）。", "options": {"A": "洛阳", "B": "开封", "C": "安阳", "D": "西安"}, "answer": "D", "explanation": "【正确答案】D（西安不属于河南省古都）\n\n【术语拆解】\n• 「八大古都」：西安、洛阳、南京、北京、开封、杭州、安阳、郑州。\n• 河南占其四：洛阳（十三朝古都）、开封（八朝古都）、安阳（殷墟、甲骨文出土地）、郑州（商代都城）。\n• 西安：陕西省省会，十三朝古都，但属于陕西而非河南。\n\n【选项辨析】\n• A：洛阳在河南，十三朝古都。\n• B：开封在河南，八朝古都。\n• C：安阳在河南，殷墟遗址所在地、甲骨文出土地。\n• D（❌）：西安是陕西古都，不属于河南，故为本题答案。\n\n【考情提示】「八大古都河南占四」是河南省情经典考点，常以\"下列不属于\"设问，须记住河南四古都（洛、开、安、郑）。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点3。\n【记忆口诀】「八大古都豫占四：洛阳开封安阳郑；西安南京北京杭，另外四个在外省」", "correct_answer": "【正确答案】D（西安不属于河南省古都）", "term_breakdown": "【术语拆解】\n• 「八大古都」：西安、洛阳、南京、北京、开封、杭州、安阳、郑州。\n• 河南占其四：洛阳（十三朝古都）、开封（八朝古都）、安阳（殷墟、甲骨文出土地）、郑州（商代都城）。\n• 西安：陕西省省会，十三朝古都，但属于陕西而非河南。", "option_analysis": "【选项辨析】\n• A：洛阳在河南，十三朝古都。\n• B：开封在河南，八朝古都。\n• C：安阳在河南，殷墟遗址所在地、甲骨文出土地。\n• D（❌）：西安是陕西古都，不属于河南，故为本题答案。", "exam_hint": "【考情提示】「八大古都河南占四」是河南省情经典考点，常以\"下列不属于\"设问，须记住河南四古都（洛、开、安、郑）。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点3。", "mnemonic": "【记忆口诀】「八大古都豫占四：洛阳开封安阳郑；西安南京北京杭，另外四个在外省」", "_id": "2026-08-13-merged-21", "question_id": "2026-08-13-merged-21"}, {"type": "单选题", "module": "河南省情", "difficulty": 2, "stem": "河南省是全国重要的粮食生产基地，粮食产量连续多年稳定在（ ）以上，占全国粮食总产量约1/10，其中（ ）产量居全国首位。", "options": {"A": "1300亿斤；小麦", "B": "1000亿斤；水稻", "C": "1500亿斤；玉米", "D": "800亿斤；大豆"}, "answer": "A", "explanation": "【正确答案】A（1300亿斤；小麦）\n\n【术语拆解】\n• 「粮食产量」：全年谷物、豆类、薯类等产量的总和，是衡量农业大省地位的核心指标。\n• 河南地处黄淮海平原，是全国重要粮食生产基地，素有\"中原粮仓\"之称。\n\n【选项辨析】\n• A（✅）：1300亿斤以上、小麦产量全国第一，与省情卡数据一致。\n• B：水稻主产区在南方，河南小麦居首而非水稻。\n• C：1500亿斤数据偏高，河南粮食产量稳定在1300亿斤以上。\n• D：800亿斤明显偏低，大豆亦非河南首位作物。\n\n【考情提示】河南\"农业大省\"定位与\"小麦全国第一\"是高频考点，常与\"中原粮仓\"\"国家粮食生产核心区\"等表述联考。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点4（来源：河南省统计局公开数据）。\n【记忆口诀】「中原粮仓小麦王，一三零零亿斤粮」", "correct_answer": "【正确答案】A（1300亿斤；小麦）", "term_breakdown": "【术语拆解】\n• 「粮食产量」：全年谷物、豆类、薯类等产量的总和，是衡量农业大省地位的核心指标。\n• 河南地处黄淮海平原，是全国重要粮食生产基地，素有\"中原粮仓\"之称。", "option_analysis": "【选项辨析】\n• A（✅）：1300亿斤以上、小麦产量全国第一，与省情卡数据一致。\n• B：水稻主产区在南方，河南小麦居首而非水稻。\n• C：1500亿斤数据偏高，河南粮食产量稳定在1300亿斤以上。\n• D：800亿斤明显偏低，大豆亦非河南首位作物。", "exam_hint": "【考情提示】河南\"农业大省\"定位与\"小麦全国第一\"是高频考点，常与\"中原粮仓\"\"国家粮食生产核心区\"等表述联考。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点4（来源：河南省统计局公开数据）。", "mnemonic": "【记忆口诀】「中原粮仓小麦王，一三零零亿斤粮」", "_id": "2026-08-13-merged-22", "question_id": "2026-08-13-merged-22"}, {"type": "单选题", "module": "河南省情", "difficulty": 2, "stem": "国务院批准设立的首个国家级航空港经济综合实验区位于（ ），该市同时是国家中心城市。", "options": {"A": "郑州市", "B": "洛阳市", "C": "开封市", "D": "南阳市"}, "answer": "A", "explanation": "【正确答案】A（郑州市）\n\n【术语拆解】\n• 「航空港经济综合实验区」：以航空枢纽为依托、发展临空经济的国家级功能区。郑州航空港经济综合实验区是国务院批准的首个国家级航空港经济实验区。\n• 「国家中心城市」：在全国城镇体系中处于核心引领地位的城市，郑州2016年获批。\n\n【选项辨析】\n• A（✅）：郑州航空港经济综合实验区为全国首个国家级航空港经济实验区，郑州为国家中心城市。\n• B：洛阳为中原城市群副中心城市，但非航空港实验区所在地。\n• C：开封位于郑州东侧，非实验区所在地。\n• D：南阳为南水北调中线工程重要节点城市，非实验区所在地。\n\n【考情提示】\"郑州=首个国家级航空港经济综合实验区+国家中心城市\"是省情政策热点考点，2021年后郑州国家中心城市建设加快，考频上升。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点5。\n【记忆口诀】「航空港区在郑州，国家中心也郑州」", "correct_answer": "【正确答案】A（郑州市）", "term_breakdown": "【术语拆解】\n• 「航空港经济综合实验区」：以航空枢纽为依托、发展临空经济的国家级功能区。郑州航空港经济综合实验区是国务院批准的首个国家级航空港经济实验区。\n• 「国家中心城市」：在全国城镇体系中处于核心引领地位的城市，郑州2016年获批。", "option_analysis": "【选项辨析】\n• A（✅）：郑州航空港经济综合实验区为全国首个国家级航空港经济实验区，郑州为国家中心城市。\n• B：洛阳为中原城市群副中心城市，但非航空港实验区所在地。\n• C：开封位于郑州东侧，非实验区所在地。\n• D：南阳为南水北调中线工程重要节点城市，非实验区所在地。", "exam_hint": "【考情提示】\"郑州=首个国家级航空港经济综合实验区+国家中心城市\"是省情政策热点考点，2021年后郑州国家中心城市建设加快，考频上升。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点5。", "mnemonic": "【记忆口诀】「航空港区在郑州，国家中心也郑州」", "_id": "2026-08-13-merged-23", "question_id": "2026-08-13-merged-23"}, {"type": "单选题", "module": "河南省情", "difficulty": 2, "stem": "中原城市群以（ ）为核心，涵盖洛阳、开封、新乡、焦作、许昌、平顶山、漯河、济源等城市，是国家重点发展的城市群之一。", "options": {"A": "郑州", "B": "洛阳", "C": "开封", "D": "南阳"}, "answer": "A", "explanation": "【正确答案】A（郑州）\n\n【术语拆解】\n• 「中原城市群」：以郑州为核心的城市群，是《中原城市群发展规划》（国务院批复）确定的国家重点发展城市群，定位为支撑中部崛起的核心增长极。\n\n【选项辨析】\n• A（✅）：郑州是中原城市群核心城市。\n• B：洛阳是中原城市群副中心城市。\n• C：开封是城市群成员，非核心。\n• D：南阳地处豫西南，非中原城市群核心。\n\n【考情提示】\"中原城市群核心=郑州、副中心=洛阳\"是省情常考点，注意主副之分。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点6。\n【记忆口诀】「中原城市群，核心是郑州，副手是洛阳」", "correct_answer": "【正确答案】A（郑州）", "term_breakdown": "【术语拆解】\n• 「中原城市群」：以郑州为核心的城市群，是《中原城市群发展规划》（国务院批复）确定的国家重点发展城市群，定位为支撑中部崛起的核心增长极。", "option_analysis": "【选项辨析】\n• A（✅）：郑州是中原城市群核心城市。\n• B：洛阳是中原城市群副中心城市。\n• C：开封是城市群成员，非核心。\n• D：南阳地处豫西南，非中原城市群核心。", "exam_hint": "【考情提示】\"中原城市群核心=郑州、副中心=洛阳\"是省情常考点，注意主副之分。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点6。", "mnemonic": "【记忆口诀】「中原城市群，核心是郑州，副手是洛阳」", "_id": "2026-08-13-merged-24", "question_id": "2026-08-13-merged-24"}, {"type": "单选题", "module": "河南省情", "difficulty": 3, "stem": "南水北调中线工程的水源地位于（ ），工程经南阳、平顶山、郑州等地北上至京津，河南既是核心水源地也是重要受水区。", "options": {"A": "丹江口水库", "B": "三峡水库", "C": "小浪底水库", "D": "三门峡水库"}, "answer": "A", "explanation": "【正确答案】A（丹江口水库）\n\n【术语拆解】\n• 「南水北调中线工程」：从汉江上游丹江口水库引水，经河南、河北北上至北京、天津，全长约1432公里，河南段约占全线一半。\n• 河南境内途经南阳、平顶山、许昌、郑州、焦作、新乡、鹤壁、安阳等市。\n\n【选项辨析】\n• A（✅）：丹江口水库（位于湖北十堰与河南淅川交界）是中线工程水源地，陶岔渠首位于河南淅川。\n• B：三峡水库位于长江干流，属长江流域工程。\n• C：小浪底水库位于黄河干流，承担防洪、减淤等功能，非南水北调水源地。\n• D：三门峡水库位于黄河干流，非水源地。\n\n【考情提示】\"南水北调中线=丹江口水库\"是省情水利考点，注意与小浪底（黄河）区分，勿混淆。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点7。\n【记忆口诀】「中线水从丹江来，陶岔渠首在淅川」", "correct_answer": "【正确答案】A（丹江口水库）", "term_breakdown": "【术语拆解】\n• 「南水北调中线工程」：从汉江上游丹江口水库引水，经河南、河北北上至北京、天津，全长约1432公里，河南段约占全线一半。\n• 河南境内途经南阳、平顶山、许昌、郑州、焦作、新乡、鹤壁、安阳等市。", "option_analysis": "【选项辨析】\n• A（✅）：丹江口水库（位于湖北十堰与河南淅川交界）是中线工程水源地，陶岔渠首位于河南淅川。\n• B：三峡水库位于长江干流，属长江流域工程。\n• C：小浪底水库位于黄河干流，承担防洪、减淤等功能，非南水北调水源地。\n• D：三门峡水库位于黄河干流，非水源地。", "exam_hint": "【考情提示】\"南水北调中线=丹江口水库\"是省情水利考点，注意与小浪底（黄河）区分，勿混淆。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点7。", "mnemonic": "【记忆口诀】「中线水从丹江来，陶岔渠首在淅川」", "_id": "2026-08-13-merged-25", "question_id": "2026-08-13-merged-25"}, {"type": "单选题", "module": "河南省情", "difficulty": 3, "stem": "习近平总书记亲自谋划、亲自部署、亲自推动的（ ）重大国家战略，使河南作为黄河流域重要省份迎来重大发展机遇，郑州、洛阳、开封等城市均处于黄河沿线。", "options": {"A": "黄河流域生态保护和高质量发展", "B": "长江经济带发展", "C": "粤港澳大湾区建设", "D": "京津冀协同发展"}, "answer": "A", "explanation": "【正确答案】A（黄河流域生态保护和高质量发展）\n\n【术语拆解】\n• 「黄河流域生态保护和高质量发展」：2019年9月习近平总书记在郑州主持召开座谈会时正式提出，与京津冀协同发展、长江经济带发展、粤港澳大湾区建设、长三角一体化发展并列的五大国家重大区域战略之一。\n• 河南是黄河流域重要省份，黄河河南段长约711公里，流经三门峡、洛阳、郑州、开封等8市。\n\n【选项辨析】\n• A（✅）：该战略2019年在郑州提出，与河南直接相关。\n• B：长江经济带覆盖长江沿线11省市，河南不在其列。\n• C：粤港澳大湾区位于广东、香港、澳门。\n• D：京津冀协同发展覆盖北京、天津、河北。\n\n【考情提示】\"黄河流域生态保护和高质量发展战略2019年在郑州提出\"是省情+时政双高频考点，注意提出地点就是郑州。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点8；2019年9月18日习近平总书记在郑州主持召开黄河流域生态保护和高质量发展座谈会（新华社）。\n【记忆口诀】「黄河战略郑州提，河南八市沿线居」", "correct_answer": "【正确答案】A（黄河流域生态保护和高质量发展）", "term_breakdown": "【术语拆解】\n• 「黄河流域生态保护和高质量发展」：2019年9月习近平总书记在郑州主持召开座谈会时正式提出，与京津冀协同发展、长江经济带发展、粤港澳大湾区建设、长三角一体化发展并列的五大国家重大区域战略之一。\n• 河南是黄河流域重要省份，黄河河南段长约711公里，流经三门峡、洛阳、郑州、开封等8市。", "option_analysis": "【选项辨析】\n• A（✅）：该战略2019年在郑州提出，与河南直接相关。\n• B：长江经济带覆盖长江沿线11省市，河南不在其列。\n• C：粤港澳大湾区位于广东、香港、澳门。\n• D：京津冀协同发展覆盖北京、天津、河北。", "exam_hint": "【考情提示】\"黄河流域生态保护和高质量发展战略2019年在郑州提出\"是省情+时政双高频考点，注意提出地点就是郑州。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点8；2019年9月18日习近平总书记在郑州主持召开黄河流域生态保护和高质量发展座谈会（新华社）。", "mnemonic": "【记忆口诀】「黄河战略郑州提，河南八市沿线居」", "_id": "2026-08-13-merged-26", "question_id": "2026-08-13-merged-26"}, {"type": "多选题", "module": "河南省情", "difficulty": 3, "stem": "下列关于河南省历史文化的说法，正确的有（ ）。", "options": {"A": "安阳殷墟是甲骨文的出土地", "B": "龙门石窟位于洛阳市", "C": "少林寺是世界文化遗产", "D": "郑州曾是商代都城"}, "answer": "ABCD", "explanation": "【正确答案】ABCD\n\n【术语拆解】\n• 「殷墟」：商代后期都城遗址，位于安阳，出土大量甲骨文，是中国历史上第一个有文献可考、并为考古发掘证实的都城遗址。\n• 「龙门石窟」：位于洛阳，世界文化遗产，与敦煌莫高窟、云冈石窟并称中国三大石窟。\n• 「少林寺」：位于登封（郑州代管），世界文化遗产\"天地之中\"历史建筑群组成部分。\n• 郑州商城遗址证实郑州为商代早期都城。\n\n【选项辨析】\n• A：正确，殷墟为甲骨文出土地。\n• B：正确，龙门石窟在洛阳。\n• C：正确，少林寺所在登封\"天地之中\"历史建筑群2010年列入世界文化遗产。\n• D：正确，郑州商城为商代都城遗址。\n\n【考情提示】河南世界文化遗产与古都文化是多选高频考点，殷墟甲骨文、龙门石窟、少林寺为最高频三件套。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点3；世界遗产名录（UNESCO）。\n【记忆口诀】「殷墟甲骨、龙门洛阳、少林登封、商都郑州」", "correct_answer": "【正确答案】ABCD", "term_breakdown": "【术语拆解】\n• 「殷墟」：商代后期都城遗址，位于安阳，出土大量甲骨文，是中国历史上第一个有文献可考、并为考古发掘证实的都城遗址。\n• 「龙门石窟」：位于洛阳，世界文化遗产，与敦煌莫高窟、云冈石窟并称中国三大石窟。\n• 「少林寺」：位于登封（郑州代管），世界文化遗产\"天地之中\"历史建筑群组成部分。\n• 郑州商城遗址证实郑州为商代早期都城。", "option_analysis": "【选项辨析】\n• A：正确，殷墟为甲骨文出土地。\n• B：正确，龙门石窟在洛阳。\n• C：正确，少林寺所在登封\"天地之中\"历史建筑群2010年列入世界文化遗产。\n• D：正确，郑州商城为商代都城遗址。", "exam_hint": "【考情提示】河南世界文化遗产与古都文化是多选高频考点，殷墟甲骨文、龙门石窟、少林寺为最高频三件套。\n【溯源】知识卡《河南省地理·历史·文化·经济核心概况》考点3；世界遗产名录（UNESCO）。", "mnemonic": "【记忆口诀】「殷墟甲骨、龙门洛阳、少林登封、商都郑州」", "_id": "2026-08-13-merged-27", "question_id": "2026-08-13-merged-27"}, {"type": "单选题", "module": "法律", "difficulty": 2, "stem": "根据《中华人民共和国宪法》第一条，我国的国体（国家性质）是（ ）。", "options": {"A": "人民民主专政的社会主义国家", "B": "人民代表大会制度", "C": "民主共和制国家", "D": "多党合作制国家"}, "answer": "A", "explanation": "【正确答案】A（人民民主专政的社会主义国家）\n\n【术语拆解】\n• 「国体」：国家性质，即社会各阶级在国家中的地位。宪法第1条规定：\"中华人民共和国是工人阶级领导的、以工农联盟为基础的人民民主专政的社会主义国家。\"\n• 「政体」：政权组织形式，与国体相区别——国体回答\"谁统治\"，政体回答\"怎么统治\"。\n\n【选项辨析】\n• A（✅）：宪法第1条原文，国体正确表述。\n• B：人民代表大会制度是我国的政体（根本政治制度），不是国体。\n• C：民主共和制是资本主义国家的政体形式。\n• D：多党合作制度是我国基本政治制度之一，非国体。\n\n【考情提示】\"国体/政体\"区分是宪法最高频考点，常直接设问，国体=人民民主专政、政体=人民代表大会制度，切勿混淆。\n【溯源】《中华人民共和国宪法》第1条、第2条（中国人大网 npc.gov.cn）。\n【记忆口诀】「国体专政、政体人大——国是性质、政是形式」", "correct_answer": "【正确答案】A（人民民主专政的社会主义国家）", "term_breakdown": "【术语拆解】\n• 「国体」：国家性质，即社会各阶级在国家中的地位。宪法第1条规定：\"中华人民共和国是工人阶级领导的、以工农联盟为基础的人民民主专政的社会主义国家。\"\n• 「政体」：政权组织形式，与国体相区别——国体回答\"谁统治\"，政体回答\"怎么统治\"。", "option_analysis": "【选项辨析】\n• A（✅）：宪法第1条原文，国体正确表述。\n• B：人民代表大会制度是我国的政体（根本政治制度），不是国体。\n• C：民主共和制是资本主义国家的政体形式。\n• D：多党合作制度是我国基本政治制度之一，非国体。", "exam_hint": "【考情提示】\"国体/政体\"区分是宪法最高频考点，常直接设问，国体=人民民主专政、政体=人民代表大会制度，切勿混淆。\n【溯源】《中华人民共和国宪法》第1条、第2条（中国人大网 npc.gov.cn）。", "mnemonic": "【记忆口诀】「国体专政、政体人大——国是性质、政是形式」", "_id": "2026-08-13-merged-28", "question_id": "2026-08-13-merged-28"}, {"type": "单选题", "module": "法律", "difficulty": 2, "stem": "我国的根本政治制度是（ ）。", "options": {"A": "人民代表大会制度", "B": "中国共产党领导的多党合作和政治协商制度", "C": "民族区域自治制度", "D": "基层群众自治制度"}, "answer": "A", "explanation": "【正确答案】A（人民代表大会制度）\n\n【术语拆解】\n• 「根本政治制度」：人民代表大会制度，宪法第2条规定\"中华人民共和国的一切权力属于人民，人民行使国家权力的机关是全国人民代表大会和地方各级人民代表大会\"。\n• 「基本政治制度」：中国共产党领导的多党合作和政治协商制度、民族区域自治制度、基层群众自治制度。\n\n【选项辨析】\n• A（✅）：人民代表大会制度是我国的根本政治制度。\n• B：多党合作和政治协商制度是基本政治制度。\n• C：民族区域自治制度是基本政治制度。\n• D：基层群众自治制度是基本政治制度。\n\n【考情提示】\"根本政治制度vs基本政治制度\"是宪法单选经典陷阱，人大制度唯一根本，其余三项均为基本。\n【溯源】《中华人民共和国宪法》第2条（中国人大网）。\n【记忆口诀】「根本只有人大制，政协民族基层三基本」", "correct_answer": "【正确答案】A（人民代表大会制度）", "term_breakdown": "【术语拆解】\n• 「根本政治制度」：人民代表大会制度，宪法第2条规定\"中华人民共和国的一切权力属于人民，人民行使国家权力的机关是全国人民代表大会和地方各级人民代表大会\"。\n• 「基本政治制度」：中国共产党领导的多党合作和政治协商制度、民族区域自治制度、基层群众自治制度。", "option_analysis": "【选项辨析】\n• A（✅）：人民代表大会制度是我国的根本政治制度。\n• B：多党合作和政治协商制度是基本政治制度。\n• C：民族区域自治制度是基本政治制度。\n• D：基层群众自治制度是基本政治制度。", "exam_hint": "【考情提示】\"根本政治制度vs基本政治制度\"是宪法单选经典陷阱，人大制度唯一根本，其余三项均为基本。\n【溯源】《中华人民共和国宪法》第2条（中国人大网）。", "mnemonic": "【记忆口诀】「根本只有人大制，政协民族基层三基本」", "_id": "2026-08-13-merged-29", "question_id": "2026-08-13-merged-29"}, {"type": "单选题", "module": "法律", "difficulty": 2, "stem": "\"法无明文规定不为罪，法无明文规定不处罚\"，体现的我国刑法基本原则是（ ）。", "options": {"A": "罪刑法定原则", "B": "罪责刑相适应原则", "C": "刑法面前人人平等原则", "D": "罪刑疑罪从无原则"}, "answer": "A", "explanation": "【正确答案】A（罪刑法定原则）\n\n【术语拆解】\n• 「罪刑法定原则」：刑法第3条——法律没有明文规定为犯罪行为的，不得定罪处刑；法律没有明文规定为犯罪行为的，不得处罚。即\"法无明文规定不为罪，法无明文规定不处罚\"。\n• 「罪责刑相适应原则」：刑罚的轻重，应当与犯罪分子所犯罪行和承担的刑事责任相适应。\n\n【选项辨析】\n• A（✅）：\"法无明文规定不为罪\"是罪刑法定原则的经典表述。\n• B：罪责刑相适应强调\"罪、责、刑\"三者均衡，与题干表述无关。\n• C：人人平等原则强调适用法律上一律平等，不因身份差异区别对待。\n• D：刑法并无\"罪刑疑罪从无原则\"这一名称，疑罪从无是刑事诉讼原则。\n\n【考情提示】刑法三大基本原则（罪刑法定、人人平等、罪责刑相适应）是必考点，题干直接引用法条原文考对应原则属最高频考法。\n【溯源】《中华人民共和国刑法》第3条、第4条、第5条（中国人大网）。\n【记忆口诀】「法无明文不为罪——罪刑法定第一位」", "correct_answer": "【正确答案】A（罪刑法定原则）", "term_breakdown": "【术语拆解】\n• 「罪刑法定原则」：刑法第3条——法律没有明文规定为犯罪行为的，不得定罪处刑；法律没有明文规定为犯罪行为的，不得处罚。即\"法无明文规定不为罪，法无明文规定不处罚\"。\n• 「罪责刑相适应原则」：刑罚的轻重，应当与犯罪分子所犯罪行和承担的刑事责任相适应。", "option_analysis": "【选项辨析】\n• A（✅）：\"法无明文规定不为罪\"是罪刑法定原则的经典表述。\n• B：罪责刑相适应强调\"罪、责、刑\"三者均衡，与题干表述无关。\n• C：人人平等原则强调适用法律上一律平等，不因身份差异区别对待。\n• D：刑法并无\"罪刑疑罪从无原则\"这一名称，疑罪从无是刑事诉讼原则。", "exam_hint": "【考情提示】刑法三大基本原则（罪刑法定、人人平等、罪责刑相适应）是必考点，题干直接引用法条原文考对应原则属最高频考法。\n【溯源】《中华人民共和国刑法》第3条、第4条、第5条（中国人大网）。", "mnemonic": "【记忆口诀】「法无明文不为罪——罪刑法定第一位」", "_id": "2026-08-13-merged-30", "question_id": "2026-08-13-merged-30"}, {"type": "单选题", "module": "法律", "difficulty": 3, "stem": "根据《中华人民共和国刑法》，已满十四周岁不满十六周岁的人，实施下列哪种行为应当负刑事责任（ ）。", "options": {"A": "盗窃他人财物数额较大", "B": "诈骗他人财物数额巨大", "C": "贩卖毒品", "D": "侵占代为保管的他人财物"}, "answer": "C", "explanation": "【正确答案】C（贩卖毒品）\n\n【术语拆解】\n• 「相对刑事责任年龄」：已满14周岁不满16周岁的人，只对刑法第17条第2款规定的八种严重犯罪负刑事责任——故意杀人、故意伤害致人重伤或者死亡、强奸、抢劫、贩卖毒品、放火、爆炸、投放危险物质。\n\n【选项辨析】\n• A：盗窃罪不在八种犯罪之列，14—16周岁实施不构成犯罪。\n• B：诈骗罪不在八种犯罪之列。\n• C（✅）：贩卖毒品属于八种犯罪之一，应当负刑事责任。\n• D：侵占罪不在八种犯罪之列。\n\n【考情提示】刑事责任年龄是刑法必考细节，\"八种犯罪\"须逐项背熟，出题常以\"下列属于/不属于\"形式考查。\n【溯源】《中华人民共和国刑法》第17条（中国人大网）。\n【记忆口诀】「杀伤强抢、贩放爆投——八字犯罪记心头」", "correct_answer": "【正确答案】C（贩卖毒品）", "term_breakdown": "【术语拆解】\n• 「相对刑事责任年龄」：已满14周岁不满16周岁的人，只对刑法第17条第2款规定的八种严重犯罪负刑事责任——故意杀人、故意伤害致人重伤或者死亡、强奸、抢劫、贩卖毒品、放火、爆炸、投放危险物质。", "option_analysis": "【选项辨析】\n• A：盗窃罪不在八种犯罪之列，14—16周岁实施不构成犯罪。\n• B：诈骗罪不在八种犯罪之列。\n• C（✅）：贩卖毒品属于八种犯罪之一，应当负刑事责任。\n• D：侵占罪不在八种犯罪之列。", "exam_hint": "【考情提示】刑事责任年龄是刑法必考细节，\"八种犯罪\"须逐项背熟，出题常以\"下列属于/不属于\"形式考查。\n【溯源】《中华人民共和国刑法》第17条（中国人大网）。", "mnemonic": "【记忆口诀】「杀伤强抢、贩放爆投——八字犯罪记心头」", "_id": "2026-08-13-merged-31", "question_id": "2026-08-13-merged-31"}, {"type": "单选题", "module": "法律", "difficulty": 2, "stem": "《中华人民共和国民法典》自（ ）起施行，共7编1260条，是我国第一部以\"典\"命名的法律。", "options": {"A": "2021年1月1日", "B": "2020年5月28日", "C": "2022年1月1日", "D": "2018年10月1日"}, "answer": "A", "explanation": "【正确答案】A（2021年1月1日施行）\n\n【术语拆解】\n• 「民法典」：2020年5月28日由十三届全国人大三次会议表决通过，2021年1月1日起施行。共7编——总则、物权、合同、人格权、婚姻家庭、继承、侵权责任，1260条。\n• 「通过日vs施行日」：通过日（2020.5.28）与施行日（2021.1.1）不同，考试常混考。\n\n【选项辨析】\n• A（✅）：2021年1月1日是施行日。\n• B：2020年5月28日是表决通过日，不是施行日。\n• C：2022年1月1日无对应法律事件。\n• D：2018年10月1日与民法典无关。\n\n【考情提示】民法典\"通过日/施行日\"双日期是高频细节考点；\"7编1260条、第一部以典命名\"亦常考。\n【溯源】《中华人民共和国民法典》（国家法律法规数据库 flk.npc.gov.cn）。\n【记忆口诀】「二〇二〇年五月二十八通过，二〇二一年元旦施行——七编一二六〇条」", "correct_answer": "【正确答案】A（2021年1月1日施行）", "term_breakdown": "【术语拆解】\n• 「民法典」：2020年5月28日由十三届全国人大三次会议表决通过，2021年1月1日起施行。共7编——总则、物权、合同、人格权、婚姻家庭、继承、侵权责任，1260条。\n• 「通过日vs施行日」：通过日（2020.5.28）与施行日（2021.1.1）不同，考试常混考。", "option_analysis": "【选项辨析】\n• A（✅）：2021年1月1日是施行日。\n• B：2020年5月28日是表决通过日，不是施行日。\n• C：2022年1月1日无对应法律事件。\n• D：2018年10月1日与民法典无关。", "exam_hint": "【考情提示】民法典\"通过日/施行日\"双日期是高频细节考点；\"7编1260条、第一部以典命名\"亦常考。\n【溯源】《中华人民共和国民法典》（国家法律法规数据库 flk.npc.gov.cn）。", "mnemonic": "【记忆口诀】「二〇二〇年五月二十八通过，二〇二一年元旦施行——七编一二六〇条」", "_id": "2026-08-13-merged-32", "question_id": "2026-08-13-merged-32"}, {"type": "单选题", "module": "法律", "difficulty": 3, "stem": "下列选项中，属于行政处罚的是（ ）。", "options": {"A": "行政拘留", "B": "刑事拘留", "C": "拘役", "D": "罚金"}, "answer": "A", "explanation": "【正确答案】A（行政拘留）\n\n【术语拆解】\n• 「行政处罚」：行政机关依法对违反行政管理秩序的公民、法人或其他组织给予的惩戒。行政处罚法第9条列明：警告、通报批评；罚款、没收违法所得、没收非法财物；暂扣许可证件、降低资质等级、吊销许可证件；限制开展生产经营活动、责令停产停业、责令关闭、限制从业；行政拘留等。\n• 「刑事拘留」：刑事诉讼中的强制措施；「拘役」「罚金」：刑罚种类。\n\n【选项辨析】\n• A（✅）：行政拘留是行政处罚中最严厉的一种，由公安机关依法作出。\n• B：刑事拘留是刑事诉讼强制措施，不是行政处罚。\n• C：拘役是主刑之一，属刑罚。\n• D：罚金是附加刑，属刑罚，与行政处罚中的\"罚款\"不同。\n\n【考情提示】\"行政拘留vs刑事拘留vs拘役\"三词辨析是行政法经典陷阱题，核心区别：行政处罚/强制措施/刑罚。\n【溯源】《中华人民共和国行政处罚法》第9条（中国人大网）；《中华人民共和国刑法》第33条。\n【记忆口诀】「拘留三分家：行政是处罚、刑事是强制、拘役是刑罚」", "correct_answer": "【正确答案】A（行政拘留）", "term_breakdown": "【术语拆解】\n• 「行政处罚」：行政机关依法对违反行政管理秩序的公民、法人或其他组织给予的惩戒。行政处罚法第9条列明：警告、通报批评；罚款、没收违法所得、没收非法财物；暂扣许可证件、降低资质等级、吊销许可证件；限制开展生产经营活动、责令停产停业、责令关闭、限制从业；行政拘留等。\n• 「刑事拘留」：刑事诉讼中的强制措施；「拘役」「罚金」：刑罚种类。", "option_analysis": "【选项辨析】\n• A（✅）：行政拘留是行政处罚中最严厉的一种，由公安机关依法作出。\n• B：刑事拘留是刑事诉讼强制措施，不是行政处罚。\n• C：拘役是主刑之一，属刑罚。\n• D：罚金是附加刑，属刑罚，与行政处罚中的\"罚款\"不同。", "exam_hint": "【考情提示】\"行政拘留vs刑事拘留vs拘役\"三词辨析是行政法经典陷阱题，核心区别：行政处罚/强制措施/刑罚。\n【溯源】《中华人民共和国行政处罚法》第9条（中国人大网）；《中华人民共和国刑法》第33条。", "mnemonic": "【记忆口诀】「拘留三分家：行政是处罚、刑事是强制、拘役是刑罚」", "_id": "2026-08-13-merged-33", "question_id": "2026-08-13-merged-33"}, {"type": "单选题", "module": "马克思主义哲学", "difficulty": 2, "stem": "恩格斯指出，全部哲学，特别是近代哲学的重大的基本问题是（ ）。", "options": {"A": "思维和存在的关系问题", "B": "物质和意识何者是第一性的问题", "C": "实践和认识的关系问题", "D": "运动和静止的关系问题"}, "answer": "A", "explanation": "【正确答案】A（思维和存在的关系问题）\n\n【术语拆解】\n• 「哲学基本问题」：思维和存在的关系问题，包括两个方面——第一方面：思维和存在何者为第一性（划分唯物主义与唯心主义）；第二方面：思维能否正确认识存在（划分可知论与不可知论）。\n\n【选项辨析】\n• A（✅）：恩格斯在《路德维希·费尔巴哈和德国古典哲学的终结》中明确指出，全部哲学的基本问题是思维和存在的关系问题。\n• B：何者为第一性只是基本问题的第一方面，不是基本问题本身。\n• C：实践和认识的关系是认识论问题，不是哲学基本问题。\n• D：运动和静止的关系属于辩证法范畴。\n\n【考情提示】哲学基本问题及其两个方面是马哲第一考点，\"基本问题=思维和存在的关系\"须记准，常考\"基本问题vs第一方面\"的区分。\n【溯源】恩格斯《路德维希·费尔巴哈和德国古典哲学的终结》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点1。\n【记忆口诀】「哲学基本问题，思维存在关系；第一方面分唯物唯心，第二方面分可知不可知」", "correct_answer": "【正确答案】A（思维和存在的关系问题）", "term_breakdown": "【术语拆解】\n• 「哲学基本问题」：思维和存在的关系问题，包括两个方面——第一方面：思维和存在何者为第一性（划分唯物主义与唯心主义）；第二方面：思维能否正确认识存在（划分可知论与不可知论）。", "option_analysis": "【选项辨析】\n• A（✅）：恩格斯在《路德维希·费尔巴哈和德国古典哲学的终结》中明确指出，全部哲学的基本问题是思维和存在的关系问题。\n• B：何者为第一性只是基本问题的第一方面，不是基本问题本身。\n• C：实践和认识的关系是认识论问题，不是哲学基本问题。\n• D：运动和静止的关系属于辩证法范畴。", "exam_hint": "【考情提示】哲学基本问题及其两个方面是马哲第一考点，\"基本问题=思维和存在的关系\"须记准，常考\"基本问题vs第一方面\"的区分。\n【溯源】恩格斯《路德维希·费尔巴哈和德国古典哲学的终结》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点1。", "mnemonic": "【记忆口诀】「哲学基本问题，思维存在关系；第一方面分唯物唯心，第二方面分可知不可知」", "_id": "2026-08-13-merged-34", "question_id": "2026-08-13-merged-34"}, {"type": "单选题", "module": "马克思主义哲学", "difficulty": 2, "stem": "列宁指出，物质的唯一特性是（ ）。", "options": {"A": "客观实在性", "B": "运动", "C": "可知性", "D": "永恒性"}, "answer": "A", "explanation": "【正确答案】A（客观实在性）\n\n【术语拆解】\n• 「物质」：列宁定义——\"物质是标志客观实在的哲学范畴，这种客观实在是人通过感觉感知的，它不依赖于我们的感觉而存在，为我们的感觉所复写、摄影、反映。\"\n• 「客观实在性」：物质的唯一特性，指物质不依赖于人的意识而独立存在，是物质的根本属性。\n\n【选项辨析】\n• A（✅）：客观实在性是物质的唯一特性。\n• B：运动是物质的存在方式和根本属性，但不是\"唯一特性\"。\n• C：可知性是从认识论角度对物质的认识可能性的描述。\n• D：永恒性是物质世界的时间属性，非唯一特性。\n\n【考情提示】\"物质的唯一特性=客观实在性\"与\"物质的存在方式/根本属性=运动\"是马哲高频易混点，常成对设题。\n【溯源】列宁《唯物主义和经验批判主义》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点2。\n【记忆口诀】「唯一特性客观实在，存在方式运动常在」", "correct_answer": "【正确答案】A（客观实在性）", "term_breakdown": "【术语拆解】\n• 「物质」：列宁定义——\"物质是标志客观实在的哲学范畴，这种客观实在是人通过感觉感知的，它不依赖于我们的感觉而存在，为我们的感觉所复写、摄影、反映。\"\n• 「客观实在性」：物质的唯一特性，指物质不依赖于人的意识而独立存在，是物质的根本属性。", "option_analysis": "【选项辨析】\n• A（✅）：客观实在性是物质的唯一特性。\n• B：运动是物质的存在方式和根本属性，但不是\"唯一特性\"。\n• C：可知性是从认识论角度对物质的认识可能性的描述。\n• D：永恒性是物质世界的时间属性，非唯一特性。", "exam_hint": "【考情提示】\"物质的唯一特性=客观实在性\"与\"物质的存在方式/根本属性=运动\"是马哲高频易混点，常成对设题。\n【溯源】列宁《唯物主义和经验批判主义》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点2。", "mnemonic": "【记忆口诀】「唯一特性客观实在，存在方式运动常在」", "_id": "2026-08-13-merged-35", "question_id": "2026-08-13-merged-35"}, {"type": "单选题", "module": "马克思主义哲学", "difficulty": 2, "stem": "唯物辩证法的实质和核心是（ ）。", "options": {"A": "对立统一规律", "B": "量变质变规律", "C": "否定之否定规律", "D": "世界普遍联系的观点"}, "answer": "A", "explanation": "【正确答案】A（对立统一规律）\n\n【术语拆解】\n• 「对立统一规律（矛盾规律）」：揭示事物发展的源泉和动力，是唯物辩证法的实质和核心。\n• 「量变质变规律」：揭示事物发展的形式和状态。\n• 「否定之否定规律」：揭示事物发展的方向和道路。\n\n【选项辨析】\n• A（✅）：对立统一规律是唯物辩证法的实质和核心。\n• B：量变质变规律揭示发展形式，不是核心。\n• C：否定之否定规律揭示发展方向道路，不是核心。\n• D：联系和发展是唯物辩证法的总特征，不是\"实质和核心\"。\n\n【考情提示】\"对立统一规律=实质和核心\"是马哲最高频原话考点，三大规律的\"地位\"表述须逐一对号。\n【溯源】知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点4；毛泽东《矛盾论》。\n【记忆口诀】「矛盾是核心，量质看形式，否定看方向」", "correct_answer": "【正确答案】A（对立统一规律）", "term_breakdown": "【术语拆解】\n• 「对立统一规律（矛盾规律）」：揭示事物发展的源泉和动力，是唯物辩证法的实质和核心。\n• 「量变质变规律」：揭示事物发展的形式和状态。\n• 「否定之否定规律」：揭示事物发展的方向和道路。", "option_analysis": "【选项辨析】\n• A（✅）：对立统一规律是唯物辩证法的实质和核心。\n• B：量变质变规律揭示发展形式，不是核心。\n• C：否定之否定规律揭示发展方向道路，不是核心。\n• D：联系和发展是唯物辩证法的总特征，不是\"实质和核心\"。", "exam_hint": "【考情提示】\"对立统一规律=实质和核心\"是马哲最高频原话考点，三大规律的\"地位\"表述须逐一对号。\n【溯源】知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点4；毛泽东《矛盾论》。", "mnemonic": "【记忆口诀】「矛盾是核心，量质看形式，否定看方向」", "_id": "2026-08-13-merged-36", "question_id": "2026-08-13-merged-36"}, {"type": "单选题", "module": "马克思主义哲学", "difficulty": 3, "stem": "\"芳林新叶催陈叶，流水前波让后波\"（刘禹锡）蕴含的哲学道理是（ ）。", "options": {"A": "新事物必然战胜旧事物，事物是发展的", "B": "量变是质变的必要准备", "C": "内因是事物变化发展的根据", "D": "意识对物质具有能动作用"}, "answer": "A", "explanation": "【正确答案】A（新事物必然战胜旧事物，事物是发展的）\n\n【术语拆解】\n• 「新事物」：符合客观规律、具有强大生命力和远大前途的事物。发展的实质是新事物的产生和旧事物的灭亡。\n• 「新叶催陈叶、前波让后波」：以自然现象比喻新旧更替，体现新事物必然战胜旧事物、事物发展的前进性。\n\n【选项辨析】\n• A（✅）：诗句形象说明发展的实质——新事物代替旧事物。\n• B：量变质变强调数量的积累引起质变，与诗句的新旧更替主题不符。\n• C：内因是根据强调内部矛盾的作用，诗句未涉及。\n• D：意识的能动作用与诗句无关。\n\n【考情提示】古诗文对应哲学原理是马哲考情提示明确列出的高频考法，\"新叶催陈叶\"是经典诗句，须与\"沉舟侧畔千帆过\"\"长江后浪推前浪\"等同类积累。\n【溯源】知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考情提示；诗句出自刘禹锡《乐天见示伤微之敦诗晦叔三君子皆有深分因成是诗以寄》。\n【记忆口诀】「新叶催陈叶——发展的实质是新事物代替旧事物」", "correct_answer": "【正确答案】A（新事物必然战胜旧事物，事物是发展的）", "term_breakdown": "【术语拆解】\n• 「新事物」：符合客观规律、具有强大生命力和远大前途的事物。发展的实质是新事物的产生和旧事物的灭亡。\n• 「新叶催陈叶、前波让后波」：以自然现象比喻新旧更替，体现新事物必然战胜旧事物、事物发展的前进性。", "option_analysis": "【选项辨析】\n• A（✅）：诗句形象说明发展的实质——新事物代替旧事物。\n• B：量变质变强调数量的积累引起质变，与诗句的新旧更替主题不符。\n• C：内因是根据强调内部矛盾的作用，诗句未涉及。\n• D：意识的能动作用与诗句无关。", "exam_hint": "【考情提示】古诗文对应哲学原理是马哲考情提示明确列出的高频考法，\"新叶催陈叶\"是经典诗句，须与\"沉舟侧畔千帆过\"\"长江后浪推前浪\"等同类积累。\n【溯源】知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考情提示；诗句出自刘禹锡《乐天见示伤微之敦诗晦叔三君子皆有深分因成是诗以寄》。", "mnemonic": "【记忆口诀】「新叶催陈叶——发展的实质是新事物代替旧事物」", "_id": "2026-08-13-merged-37", "question_id": "2026-08-13-merged-37"}, {"type": "单选题", "module": "马克思主义哲学", "difficulty": 3, "stem": "\"历史活动是群众的事业，随着历史活动的深入，必将是群众队伍的扩大。\"这一论断体现的历史唯物主义观点是（ ）。", "options": {"A": "人民群众是历史的创造者", "B": "杰出人物决定历史发展的基本趋势", "C": "社会意识决定社会存在", "D": "地理环境决定社会发展"}, "answer": "A", "explanation": "【正确答案】A（人民群众是历史的创造者）\n\n【术语拆解】\n• 「人民群众是历史的创造者」：人民群众是社会物质财富和精神财富的创造者，是社会变革的决定力量。\n• 历史唯物主义认为，杰出人物对历史发展有重大影响，但不能决定历史发展的基本趋势。\n\n【选项辨析】\n• A（✅）：\"历史活动是群众的事业\"直接体现群众史观。\n• B：杰出人物决定论属于唯心史观，与题干相反。\n• C：社会意识决定社会存在是历史唯心主义观点。\n• D：地理环境决定论是机械唯物主义的错误观点。\n\n【考情提示】\"人民群众是历史的创造者\"vs\"英雄史观\"是历史唯物主义核心考点，常以名人名言设问判断其历史观立场。\n【溯源】马克思、恩格斯《神圣家族》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点14。\n【记忆口诀】「群众创造历史，英雄推动不决定」", "correct_answer": "【正确答案】A（人民群众是历史的创造者）", "term_breakdown": "【术语拆解】\n• 「人民群众是历史的创造者」：人民群众是社会物质财富和精神财富的创造者，是社会变革的决定力量。\n• 历史唯物主义认为，杰出人物对历史发展有重大影响，但不能决定历史发展的基本趋势。", "option_analysis": "【选项辨析】\n• A（✅）：\"历史活动是群众的事业\"直接体现群众史观。\n• B：杰出人物决定论属于唯心史观，与题干相反。\n• C：社会意识决定社会存在是历史唯心主义观点。\n• D：地理环境决定论是机械唯物主义的错误观点。", "exam_hint": "【考情提示】\"人民群众是历史的创造者\"vs\"英雄史观\"是历史唯物主义核心考点，常以名人名言设问判断其历史观立场。\n【溯源】马克思、恩格斯《神圣家族》；知识卡《唯物论·辩证法·认识论·历史唯物主义核心考点》考点14。", "mnemonic": "【记忆口诀】「群众创造历史，英雄推动不决定」", "_id": "2026-08-13-merged-38", "question_id": "2026-08-13-merged-38"}, {"type": "单选题", "module": "中国特色社会主义理论", "difficulty": 2, "stem": "党的十九届六中全会提出、党的二十大重申的\"两个确立\"是指：确立习近平同志党中央的核心、全党的核心地位，确立（ ）。", "options": {"A": "习近平新时代中国特色社会主义思想的指导地位", "B": "全面建成社会主义现代化强国的目标地位", "C": "全面从严治党的战略地位", "D": "中国特色社会主义制度的成熟定型地位"}, "answer": "A", "explanation": "【正确答案】A（习近平新时代中国特色社会主义思想的指导地位）\n\n【术语拆解】\n• 「两个确立」：确立习近平同志党中央的核心、全党的核心地位；确立习近平新时代中国特色社会主义思想的指导地位。十九届六中全会（2021年11月）首次提出，党的二十大再次强调，是新时代取得一切成就的根本保证。\n\n【选项辨析】\n• A（✅）：思想指导地位是\"两个确立\"第二项内容。\n• B：建成社会主义现代化强国是\"两个一百年\"奋斗目标之一，非\"两个确立\"内容。\n• C：全面从严治党是\"四个全面\"战略布局之一，非\"两个确立\"内容。\n• D：制度成熟定型是全面深化改革目标表述，非\"两个确立\"内容。\n\n【考情提示】\"两个确立\"是中特+时政必背考点，常考\"第一项=核心地位、第二项=指导地位\"的精确表述。\n【溯源】《中共中央关于党的百年奋斗重大成就和历史经验的决议》（2021年11月）；党的二十大报告（2022年10月）。\n【记忆口诀】「两个确立：一个核心、一个思想——核心地位加指导地位」", "correct_answer": "【正确答案】A（习近平新时代中国特色社会主义思想的指导地位）", "term_breakdown": "【术语拆解】\n• 「两个确立」：确立习近平同志党中央的核心、全党的核心地位；确立习近平新时代中国特色社会主义思想的指导地位。十九届六中全会（2021年11月）首次提出，党的二十大再次强调，是新时代取得一切成就的根本保证。", "option_analysis": "【选项辨析】\n• A（✅）：思想指导地位是\"两个确立\"第二项内容。\n• B：建成社会主义现代化强国是\"两个一百年\"奋斗目标之一，非\"两个确立\"内容。\n• C：全面从严治党是\"四个全面\"战略布局之一，非\"两个确立\"内容。\n• D：制度成熟定型是全面深化改革目标表述，非\"两个确立\"内容。", "exam_hint": "【考情提示】\"两个确立\"是中特+时政必背考点，常考\"第一项=核心地位、第二项=指导地位\"的精确表述。\n【溯源】《中共中央关于党的百年奋斗重大成就和历史经验的决议》（2021年11月）；党的二十大报告（2022年10月）。", "mnemonic": "【记忆口诀】「两个确立：一个核心、一个思想——核心地位加指导地位」", "_id": "2026-08-13-merged-39", "question_id": "2026-08-13-merged-39"}, {"type": "单选题", "module": "中国特色社会主义理论", "difficulty": 2, "stem": "\"四个自信\"是指道路自信、理论自信、制度自信和（ ）。", "options": {"A": "文化自信", "B": "民族自信", "C": "历史自信", "D": "政治自信"}, "answer": "A", "explanation": "【正确答案】A（文化自信）\n\n【术语拆解】\n• 「四个自信」：道路自信、理论自信、制度自信、文化自信，源于习近平总书记在庆祝中国共产党成立95周年大会上提出的完整表述。\n• 「文化自信」：更基础、更广泛、更深厚的自信，是\"四个自信\"中具有根本性意义的内容。\n\n【选项辨析】\n• A（✅）：文化自信是\"四个自信\"第四项。\n• B：\"民族自信\"不是标准提法。\n• C：\"历史自信\"是2021年党史学习教育中提出的重要论断，但不属于\"四个自信\"。\n• D：\"政治自信\"非标准提法。\n\n【考情提示】\"四个自信\"帽子题高频，注意区分\"四个自信\"（道路/理论/制度/文化）与\"四个意识\"（政治/大局/核心/看齐），两组概念常混考。\n【溯源】习近平总书记在庆祝中国共产党成立95周年大会上的讲话（2016年7月1日）；党的二十大报告。\n【记忆口诀】「道路理论制度文化——四自缺一不可；政治大局核心看齐——四意另记一笔」", "correct_answer": "【正确答案】A（文化自信）", "term_breakdown": "【术语拆解】\n• 「四个自信」：道路自信、理论自信、制度自信、文化自信，源于习近平总书记在庆祝中国共产党成立95周年大会上提出的完整表述。\n• 「文化自信」：更基础、更广泛、更深厚的自信，是\"四个自信\"中具有根本性意义的内容。", "option_analysis": "【选项辨析】\n• A（✅）：文化自信是\"四个自信\"第四项。\n• B：\"民族自信\"不是标准提法。\n• C：\"历史自信\"是2021年党史学习教育中提出的重要论断，但不属于\"四个自信\"。\n• D：\"政治自信\"非标准提法。", "exam_hint": "【考情提示】\"四个自信\"帽子题高频，注意区分\"四个自信\"（道路/理论/制度/文化）与\"四个意识\"（政治/大局/核心/看齐），两组概念常混考。\n【溯源】习近平总书记在庆祝中国共产党成立95周年大会上的讲话（2016年7月1日）；党的二十大报告。", "mnemonic": "【记忆口诀】「道路理论制度文化——四自缺一不可；政治大局核心看齐——四意另记一笔」", "_id": "2026-08-13-merged-40", "question_id": "2026-08-13-merged-40"}, {"type": "单选题", "module": "中国特色社会主义理论", "difficulty": 2, "stem": "根据习近平新时代中国特色社会主义思想\"十个明确\"，中国特色社会主义最本质的特征是（ ）。", "options": {"A": "中国共产党领导", "B": "人民当家作主", "C": "全面依法治国", "D": "公有制为主体、多种所有制经济共同发展"}, "answer": "A", "explanation": "【正确答案】A（中国共产党领导）\n\n【术语拆解】\n• 「十个明确」：习近平新时代中国特色社会主义思想的核心内容。其中第一个明确即——明确中国特色社会主义最本质的特征是中国共产党领导，中国特色社会主义制度的最大优势是中国共产党领导，党是最高政治领导力量。\n• 「最本质特征/最大优势」：两个\"最\"的表述都指向党的领导，是理解习近平新时代中国特色社会主义思想的钥匙。\n\n【选项辨析】\n• A（✅）：\"最本质的特征=党的领导\"是\"十个明确\"第一项。\n• B：人民当家作主是社会主义民主政治的本质特征，注意\"本质特征\"与\"最本质特征\"措辞区别。\n• C：全面依法治国是\"四个全面\"战略布局之一。\n• D：公有制为主体是基本经济制度内容，不是最本质特征。\n\n【考情提示】\"最本质的特征=党的领导\"是高频帽子题，常与\"人民当家作主（社会主义民主政治的本质特征）\"对设干扰。\n【溯源】党的二十大报告；《习近平新时代中国特色社会主义思想学习纲要》。\n【记忆口诀】「最本质、最大优势，都是党的领导——两个最，记一记」", "correct_answer": "【正确答案】A（中国共产党领导）", "term_breakdown": "【术语拆解】\n• 「十个明确」：习近平新时代中国特色社会主义思想的核心内容。其中第一个明确即——明确中国特色社会主义最本质的特征是中国共产党领导，中国特色社会主义制度的最大优势是中国共产党领导，党是最高政治领导力量。\n• 「最本质特征/最大优势」：两个\"最\"的表述都指向党的领导，是理解习近平新时代中国特色社会主义思想的钥匙。", "option_analysis": "【选项辨析】\n• A（✅）：\"最本质的特征=党的领导\"是\"十个明确\"第一项。\n• B：人民当家作主是社会主义民主政治的本质特征，注意\"本质特征\"与\"最本质特征\"措辞区别。\n• C：全面依法治国是\"四个全面\"战略布局之一。\n• D：公有制为主体是基本经济制度内容，不是最本质特征。", "exam_hint": "【考情提示】\"最本质的特征=党的领导\"是高频帽子题，常与\"人民当家作主（社会主义民主政治的本质特征）\"对设干扰。\n【溯源】党的二十大报告；《习近平新时代中国特色社会主义思想学习纲要》。", "mnemonic": "【记忆口诀】「最本质、最大优势，都是党的领导——两个最，记一记」", "_id": "2026-08-13-merged-41", "question_id": "2026-08-13-merged-41"}, {"type": "多选题", "module": "中国特色社会主义理论", "difficulty": 3, "stem": "党的二十大报告指出，中国式现代化具有鲜明的中国特色。下列选项中，属于中国式现代化特征的有（ ）。", "options": {"A": "人口规模巨大的现代化", "B": "全体人民共同富裕的现代化", "C": "物质文明和精神文明相协调的现代化", "D": "人与自然和谐共生的现代化"}, "answer": "ABCD", "explanation": "【正确答案】ABCD\n\n【术语拆解】\n• 「中国式现代化」五个特征：人口规模巨大的现代化；全体人民共同富裕的现代化；物质文明和精神文明相协调的现代化；人与自然和谐共生的现代化；走和平发展道路的现代化。\n• 本质要求：坚持中国共产党领导，坚持中国特色社会主义，实现高质量发展，发展全过程人民民主等。\n\n【选项辨析】\n• A：正确，14亿多人口整体迈进现代化社会，规模超过现有发达国家人口总和。\n• B：正确，共同富裕是中国式现代化的重要特征。\n• C：正确，强调物质文明和精神文明两手抓。\n• D：正确，坚持可持续发展，走生产发展、生活富裕、生态良好的文明发展道路。\n\n【考情提示】\"中国式现代化五个特征\"是2024—2025年最热考点，多选题几乎必考，五项须完整记忆，注意\"走和平发展道路的现代化\"勿遗漏。\n【溯源】党的二十大报告（2022年10月，中国政府网全文）。\n【记忆口诀】「规模大、共同富、两文明、人自然、和平路——五个特征一串记」", "correct_answer": "【正确答案】ABCD", "term_breakdown": "【术语拆解】\n• 「中国式现代化」五个特征：人口规模巨大的现代化；全体人民共同富裕的现代化；物质文明和精神文明相协调的现代化；人与自然和谐共生的现代化；走和平发展道路的现代化。\n• 本质要求：坚持中国共产党领导，坚持中国特色社会主义，实现高质量发展，发展全过程人民民主等。", "option_analysis": "【选项辨析】\n• A：正确，14亿多人口整体迈进现代化社会，规模超过现有发达国家人口总和。\n• B：正确，共同富裕是中国式现代化的重要特征。\n• C：正确，强调物质文明和精神文明两手抓。\n• D：正确，坚持可持续发展，走生产发展、生活富裕、生态良好的文明发展道路。", "exam_hint": "【考情提示】\"中国式现代化五个特征\"是2024—2025年最热考点，多选题几乎必考，五项须完整记忆，注意\"走和平发展道路的现代化\"勿遗漏。\n【溯源】党的二十大报告（2022年10月，中国政府网全文）。", "mnemonic": "【记忆口诀】「规模大、共同富、两文明、人自然、和平路——五个特征一串记」", "_id": "2026-08-13-merged-42", "question_id": "2026-08-13-merged-42"}, {"type": "单选题", "module": "中国特色社会主义理论", "difficulty": 2, "stem": "新发展理念中，（ ）是引领发展的第一动力。", "options": {"A": "创新", "B": "协调", "C": "绿色", "D": "开放"}, "answer": "A", "explanation": "【正确答案】A（创新）\n\n【术语拆解】\n• 「新发展理念」：创新、协调、绿色、开放、共享。\n• 各自定位：创新是引领发展的第一动力；协调是持续健康发展的内在要求；绿色是永续发展的必要条件；开放是国家繁荣发展的必由之路；共享是中国特色社会主义的本质要求。\n\n【选项辨析】\n• A（✅）：创新=第一动力。\n• B：协调=内在要求。\n• C：绿色=必要条件。\n• D：开放=必由之路。\n\n【考情提示】五大理念与定位\"帽子\"的对应关系是高频考点，常考\"创新是第一动力、共享是本质要求\"等精确匹配。\n【溯源】党的二十大报告；党的十八届五中全会提出的新发展理念。\n【记忆口诀】「创一协内、绿必开路、共享本质——五顶帽子对号戴」", "correct_answer": "【正确答案】A（创新）", "term_breakdown": "【术语拆解】\n• 「新发展理念」：创新、协调、绿色、开放、共享。\n• 各自定位：创新是引领发展的第一动力；协调是持续健康发展的内在要求；绿色是永续发展的必要条件；开放是国家繁荣发展的必由之路；共享是中国特色社会主义的本质要求。", "option_analysis": "【选项辨析】\n• A（✅）：创新=第一动力。\n• B：协调=内在要求。\n• C：绿色=必要条件。\n• D：开放=必由之路。", "exam_hint": "【考情提示】五大理念与定位\"帽子\"的对应关系是高频考点，常考\"创新是第一动力、共享是本质要求\"等精确匹配。\n【溯源】党的二十大报告；党的十八届五中全会提出的新发展理念。", "mnemonic": "【记忆口诀】「创一协内、绿必开路、共享本质——五顶帽子对号戴」", "_id": "2026-08-13-merged-43", "question_id": "2026-08-13-merged-43"}, {"type": "单选题", "module": "时政热点", "difficulty": 2, "stem": "河南省2026年高校毕业生“三支一扶”计划招募，考生获取公告、报名、准考证打印等官方信息应以（ ）发布为准。", "options": {"A": "河南省人事考试网（www.hnrsks.com）", "B": "河南省教育厅官网", "C": "河南省农业农村厅官网", "D": "中国人事考试网"}, "answer": "A", "explanation": "【正确答案】A（河南省人事考试网）\n\n【术语拆解】\n• 「三支一扶」：支教、支农、支医和帮扶乡村振兴计划的简称，是国家引导高校毕业生到基层就业的重要项目，河南省2026年高校毕业生三支一扶计划招募公告即发布于河南省人事考试网。\n• 「河南省人事考试网（www.hnrsks.com）」：河南省人事考试中心官方网站，河南省公务员录用、事业单位公开招聘、三支一扶招募等各类人事考试信息的第一权威发布渠道。\n\n【选项辨析】\n• A（✅）：河南省2026年高校毕业生三支一扶计划招募公告发布在河南省人事考试网「站内公告」栏目，报名、准考证打印、成绩查询等环节均以该网站通知为准。\n• B：河南省教育厅官网主要发布教育行政、招生考试类信息，不承担三支一扶招募公告发布职能。\n• C：河南省农业农村厅官网侧重涉农政策宣传，并非人事考试公告渠道。\n• D：中国人事考试网面向全国统一组织的职业资格考试，地方三支一扶招募公告不在该网发布。\n\n【考情提示】招考信息渠道类题目是时政/河南考情的高频考点，答题要点是「以官方渠道发布为准」：三支一扶、公务员、事业单位招考信息均以河南省人事考试网发布为准。\n【记忆口诀】河南招考认人事考试网，三支一扶看 hnrsks（河南省人事考试网域名）\n\n【来源】河南省2026年高校毕业生“三支一扶”计... http://www.hnrsks.com/sitesources/hnsrskszx/page_pc/zngg/articleceb9de9a9b43436a93cedf821947fae0.html", "correct_answer": "【正确答案】A（河南省人事考试网）", "term_breakdown": "【术语拆解】\n• 「三支一扶」：支教、支农、支医和帮扶乡村振兴计划的简称，是国家引导高校毕业生到基层就业的重要项目，河南省2026年高校毕业生三支一扶计划招募公告即发布于河南省人事考试网。\n• 「河南省人事考试网（www.hnrsks.com）」：河南省人事考试中心官方网站，河南省公务员录用、事业单位公开招聘、三支一扶招募等各类人事考试信息的第一权威发布渠道。", "option_analysis": "【选项辨析】\n• A（✅）：河南省2026年高校毕业生三支一扶计划招募公告发布在河南省人事考试网「站内公告」栏目，报名、准考证打印、成绩查询等环节均以该网站通知为准。\n• B：河南省教育厅官网主要发布教育行政、招生考试类信息，不承担三支一扶招募公告发布职能。\n• C：河南省农业农村厅官网侧重涉农政策宣传，并非人事考试公告渠道。\n• D：中国人事考试网面向全国统一组织的职业资格考试，地方三支一扶招募公告不在该网发布。", "exam_hint": "【考情提示】招考信息渠道类题目是时政/河南考情的高频考点，答题要点是「以官方渠道发布为准」：三支一扶、公务员、事业单位招考信息均以河南省人事考试网发布为准。", "mnemonic": "【记忆口诀】河南招考认人事考试网，三支一扶看 hnrsks（河南省人事考试网域名）", "_id": "2026-08-13-merged-44", "question_id": "2026-08-13-merged-44"}, {"type": "单选题", "module": "三农与乡村振兴", "difficulty": 2, "stem": "根据《中华人民共和国统计法》和《全国农业普查条例》的规定，国务院决定于（ ）年开展第四次全国农业普查。", "options": {"A": "2025年", "B": "2026年", "C": "2027年", "D": "2028年"}, "answer": "B", "explanation": "【正确答案】B（2026年）\n\n【术语拆解】\n• 「全国农业普查」：由国家统一组织的重大国情国力调查，依据《中华人民共和国统计法》和《全国农业普查条例》开展，每10年进行一次（1996年、2006年、2016年、2026年分别为第一至第四次）。\n• 「第四次全国农业普查」：国务院印发通知决定2026年开展，是在以中国式现代化全面推进中华民族伟大复兴的新征程上开展的一项重大国情国力调查。\n\n【选项辨析】\n• A 2025年：2025年是印发开展普查通知的年份，但普查正式开展年份为2026年，注意区分「印发通知年份」与「普查开展年份」。\n• B（✅）：2026年为第四次全国农业普查年，符合农业普查十年一次、逢6年份开展的周期规律。\n• C 2027年：若在2027年开展则打破十年周期，与历次普查间隔不符。\n• D 2028年：间隔过长，不符合农业普查十年一次的周期安排。\n\n【考情提示】农业普查年份与周期是三农时政常考点，记住「十年一次、逢6开展」的规律（1996/2006/2016/2026），并注意区分通知印发年份与普查开展年份。\n【记忆口诀】农业普查十年一轮、逢6开查：九六、零六、一六、二六\n\n【来源】国务院印发《关于开展第四次全国农业普查的通知》 http://politics.people.com.cn/n1/2025/0605/c1001-40494878.html", "correct_answer": "【正确答案】B（2026年）", "term_breakdown": "【术语拆解】\n• 「全国农业普查」：由国家统一组织的重大国情国力调查，依据《中华人民共和国统计法》和《全国农业普查条例》开展，每10年进行一次（1996年、2006年、2016年、2026年分别为第一至第四次）。\n• 「第四次全国农业普查」：国务院印发通知决定2026年开展，是在以中国式现代化全面推进中华民族伟大复兴的新征程上开展的一项重大国情国力调查。", "option_analysis": "【选项辨析】\n• A 2025年：2025年是印发开展普查通知的年份，但普查正式开展年份为2026年，注意区分「印发通知年份」与「普查开展年份」。\n• B（✅）：2026年为第四次全国农业普查年，符合农业普查十年一次、逢6年份开展的周期规律。\n• C 2027年：若在2027年开展则打破十年周期，与历次普查间隔不符。\n• D 2028年：间隔过长，不符合农业普查十年一次的周期安排。", "exam_hint": "【考情提示】农业普查年份与周期是三农时政常考点，记住「十年一次、逢6开展」的规律（1996/2006/2016/2026），并注意区分通知印发年份与普查开展年份。", "mnemonic": "【记忆口诀】农业普查十年一轮、逢6开查：九六、零六、一六、二六", "_id": "2026-08-13-merged-45", "question_id": "2026-08-13-merged-45"}, {"type": "单选题", "module": "河南省情", "difficulty": 3, "stem": "河南省三门峡市卢氏县探索形成的、以“小议事”撬动“大治理”的基层治理创新模式是（ ）。", "options": {"A": "“凉亭夜话”", "B": "“板凳会”", "C": "“院坝会”", "D": "“流动议事会”"}, "answer": "A", "explanation": "【正确答案】A（“凉亭夜话”）\n\n【术语拆解】\n• 「凉亭夜话」：河南省三门峡市卢氏县基层治理创新实践，源于卢氏县木桐乡群众的自发行动，村民在树下院落、乡间凉亭围坐议事，后发展为党委引领下的制度化实践，被媒体称为以「小议事」撬动「大治理」。\n• 「基层治理创新」：以群众议事平台为载体推动治理重心下移，让群众从治理对象变为治理参与者。\n\n【选项辨析】\n• A（✅）：「凉亭夜话」是卢氏县木桐乡群众自发形成、后由党委引领制度化的议事模式，是当地基层治理的典型创新品牌。\n• B「板凳会」：安徽等地推广的基层议事形式，与卢氏县凉亭夜话不同源。\n• C「院坝会」：云贵川等地常见的群众会形式，并非河南卢氏首创。\n• D「流动议事会」：泛指巡回式议事形式，不是卢氏县的具体创新品牌。\n\n【考情提示】河南本地社会治理典型经验是河南省情模块的命题素材，注意「地点—做法」的对应关系，选项常混入外省经验作干扰。\n【记忆口诀】卢氏木桐凉亭下，夜话议事大治理\n\n【来源】河南卢氏：“小议事”撬动“大治理” http://politics.people.com.cn/n1/2025/0605/c458474-40494470.html", "correct_answer": "【正确答案】A（“凉亭夜话”）", "term_breakdown": "【术语拆解】\n• 「凉亭夜话」：河南省三门峡市卢氏县基层治理创新实践，源于卢氏县木桐乡群众的自发行动，村民在树下院落、乡间凉亭围坐议事，后发展为党委引领下的制度化实践，被媒体称为以「小议事」撬动「大治理」。\n• 「基层治理创新」：以群众议事平台为载体推动治理重心下移，让群众从治理对象变为治理参与者。", "option_analysis": "【选项辨析】\n• A（✅）：「凉亭夜话」是卢氏县木桐乡群众自发形成、后由党委引领制度化的议事模式，是当地基层治理的典型创新品牌。\n• B「板凳会」：安徽等地推广的基层议事形式，与卢氏县凉亭夜话不同源。\n• C「院坝会」：云贵川等地常见的群众会形式，并非河南卢氏首创。\n• D「流动议事会」：泛指巡回式议事形式，不是卢氏县的具体创新品牌。", "exam_hint": "【考情提示】河南本地社会治理典型经验是河南省情模块的命题素材，注意「地点—做法」的对应关系，选项常混入外省经验作干扰。", "mnemonic": "【记忆口诀】卢氏木桐凉亭下，夜话议事大治理", "_id": "2026-08-13-merged-46", "question_id": "2026-08-13-merged-46"}, {"type": "单选题", "module": "时政热点", "difficulty": 3, "stem": "2022年12月印发的《乡村振兴责任制实施办法》是由（ ）印发的。", "options": {"A": "中共中央办公厅、国务院办公厅", "B": "农业农村部", "C": "国家发展和改革委员会", "D": "全国人大常委会"}, "answer": "A", "explanation": "【正确答案】A（中共中央办公厅、国务院办公厅）\n\n【术语拆解】\n• 「乡村振兴责任制」：以制度形式明确中央和国家机关有关部门、地方各级党委和政府推进乡村振兴的责任，实行中央统筹、省负总责、市县乡抓落实的工作机制。\n• 「实施办法」：对乡村振兴责任落实作出的具体制度安排，印发后要求各地区各部门认真遵照执行。\n\n【选项辨析】\n• A（✅）：《乡村振兴责任制实施办法》由中共中央办公厅、国务院办公厅印发，属于中央层面联合发文，权威层级最高。\n• B 农业农村部：作为主管部门负责组织实施与督导，但不是印发主体。\n• C 国家发展改革委：承担部分涉农规划职能，不承担该文件印发职责。\n• D 全国人大常委会：行使立法权，不印发此类党内规范性文件。\n\n【考情提示】「印发主体」类时政题重在记忆发文机关层级：重要涉农文件多为中办、国办联合印发，部委文件则为部门单独印发，两者层级不同。\n【记忆口诀】乡村振兴责任制，中办国办联合印\n\n【来源】中共中央办公厅 国务院办公厅印发《乡村振兴责任制实施办法》 http://www.news.cn/politics/2022-12/14/c_1129206017.htm", "correct_answer": "【正确答案】A（中共中央办公厅、国务院办公厅）", "term_breakdown": "【术语拆解】\n• 「乡村振兴责任制」：以制度形式明确中央和国家机关有关部门、地方各级党委和政府推进乡村振兴的责任，实行中央统筹、省负总责、市县乡抓落实的工作机制。\n• 「实施办法」：对乡村振兴责任落实作出的具体制度安排，印发后要求各地区各部门认真遵照执行。", "option_analysis": "【选项辨析】\n• A（✅）：《乡村振兴责任制实施办法》由中共中央办公厅、国务院办公厅印发，属于中央层面联合发文，权威层级最高。\n• B 农业农村部：作为主管部门负责组织实施与督导，但不是印发主体。\n• C 国家发展改革委：承担部分涉农规划职能，不承担该文件印发职责。\n• D 全国人大常委会：行使立法权，不印发此类党内规范性文件。", "exam_hint": "【考情提示】「印发主体」类时政题重在记忆发文机关层级：重要涉农文件多为中办、国办联合印发，部委文件则为部门单独印发，两者层级不同。", "mnemonic": "【记忆口诀】乡村振兴责任制，中办国办联合印", "_id": "2026-08-13-merged-47", "question_id": "2026-08-13-merged-47"}, {"type": "单选题", "module": "三农与乡村振兴", "difficulty": 2, "stem": "根据2024年施行的《中华人民共和国粮食安全保障法》，国家实行最严格的耕地保护制度，严守（ ）耕地红线，坚决遏制耕地“非农化”、防止“非粮化”。", "options": {"A": "15亿亩", "B": "16亿亩", "C": "18亿亩", "D": "20亿亩"}, "answer": "C", "explanation": "【正确答案】C（18亿亩）\n\n【术语拆解】\n• 「18亿亩耕地红线」：我国耕地保有量的底线，是保障国家粮食安全的根基，由《粮食安全保障法》以法律形式明确。\n• 「非农化/非粮化」：耕地被用于非农业建设称「非农化」，被改种非粮食作物称「非粮化」，两者均须坚决遏制。\n• 「粮食安全保障法」：2023年12月通过、2024年6月1日起施行的我国粮食领域基础性法律。\n\n【选项辨析】\n• A 15亿亩：低于法定耕地红线，为干扰数字。\n• B 16亿亩：同样低于法定红线，为干扰数字。\n• C（✅）：18亿亩是《粮食安全保障法》明确的耕地红线，与「谷物基本自给、口粮绝对安全」的国家粮食安全战略相配套。\n• D 20亿亩：高于法定红线，我国现实耕地保有量未达到该数值。\n\n【考情提示】耕地红线数值是三支一扶三农模块高频考点，重点记忆18亿亩，并掌握「非农化」「非粮化」两个概念的对应关系。\n【记忆口诀】耕地红线十八亿，非农非粮双遏制\n\n【来源】知识卡《粮食安全·耕地保护·乡村振兴核心政策考点》", "correct_answer": "【正确答案】C（18亿亩）", "term_breakdown": "【术语拆解】\n• 「18亿亩耕地红线」：我国耕地保有量的底线，是保障国家粮食安全的根基，由《粮食安全保障法》以法律形式明确。\n• 「非农化/非粮化」：耕地被用于非农业建设称「非农化」，被改种非粮食作物称「非粮化」，两者均须坚决遏制。\n• 「粮食安全保障法」：2023年12月通过、2024年6月1日起施行的我国粮食领域基础性法律。", "option_analysis": "【选项辨析】\n• A 15亿亩：低于法定耕地红线，为干扰数字。\n• B 16亿亩：同样低于法定红线，为干扰数字。\n• C（✅）：18亿亩是《粮食安全保障法》明确的耕地红线，与「谷物基本自给、口粮绝对安全」的国家粮食安全战略相配套。\n• D 20亿亩：高于法定红线，我国现实耕地保有量未达到该数值。", "exam_hint": "【考情提示】耕地红线数值是三支一扶三农模块高频考点，重点记忆18亿亩，并掌握「非农化」「非粮化」两个概念的对应关系。", "mnemonic": "【记忆口诀】耕地红线十八亿，非农非粮双遏制", "_id": "2026-08-13-merged-48", "question_id": "2026-08-13-merged-48"}]}, "summary": {"total_cards": 11, "modules_covered": ["马克思主义哲学", "法律", "公文写作", "中国特色社会主义理论", "河南省情", "经济常识", "中共党史", "三农与乡村振兴", "时政热点"], "total_key_points": 56, "cards": [{"title": "中共中央国务院关于进一步深化农村改革扎实推进乡村全面振兴的意见（2025年中央一号文件）考点", "module": "时政热点", "key_points": ["一、文件定位与基本信息", "二、总框架：\"两个持续、四个着力\"", "三、守牢\"两条底线\"（总纲·必背）", "四、持续增强粮食等重要农产品供给保障能力（粮食安全）", "五、持续巩固拓展脱贫攻坚成果（防返贫）", "六、着力壮大县域富民产业（乡村产业）", "七、着力推进乡村建设（\"千万工程\"·和美乡村）", "八、着力健全乡村治理体系（自治法治德治）"], "key_terms": ["2025年2月23日", "第13个", "连续第22年", "两个持续、四个着力", "首次提出\"农业新质生产力\"", "五年过渡期收官之年"], "table_count": 12}, {"title": "2025年国务院政府工作报告（李强总理·十四届全国人大三次会议）核心考点", "module": "时政热点", "key_points": ["一、报告基本信息与历史定位", "二、2024年工作回顾（已实现数据·反推题源）", "三、2025年主要预期目标（单选数字题·必背表）", "四、宏观政策取向（理解类·多选高频）", "五、2025年重点任务（多选题最爱）", "六、新质生产力专题（新增热点·极可能考）", "七、民生保障关键词（单选细节题）", "八、三农与三支一扶专项关联（高概率考点）"], "key_terms": ["2025年3月5日", "十四届全国人大三次会议", "2024年工作回顾", "2025年工作部署", "单选数字题", "2025年"], "table_count": 11}, {"title": "唯物论·辩证法·认识论·历史唯物主义核心考点", "module": "马克思主义哲学", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源与验证"], "key_terms": ["哲学基本问题", "物质的哲学定义", "物质与意识的辩证关系", "对立统一规律（矛盾规律）——辩证法的实质和核心", "量变质变规律", "否定之否定规律"], "table_count": 0}, {"title": "河南省地理·历史·文化·经济核心概况", "module": "河南省情", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源"], "key_terms": ["基本概况", "地理特征", "历史文化", "农业大省", "郑州航空港经济综合实验区", "中原城市群"], "table_count": 0}, {"title": "宏观经济·微观经济·社会主义市场经济核心考点", "module": "经济常识", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源"], "key_terms": ["商品二因素", "劳动二重性", "货币的五大职能", "价值规律", "市场经济与宏观调控", "GDP 与 GNP"], "table_count": 0}, {"title": "宪法·刑法·民法·行政法核心考点", "module": "法律", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源与验证"], "key_terms": ["我国的国体与政体", "公民的基本权利", "国家机构", "刑法的基本原则", "犯罪构成四要件", "正当防卫与紧急避险"], "table_count": 0}, {"title": "2024-2025年重要中央会议与习近平总书记重要讲话精神考点汇编", "module": "时政热点", "key_points": ["一、二十届三中全会（2024年7月15日—18日）——进一步全面深化改革", "二、2024年12月中央经济工作会议（12月11日—12日）——定调2025年经济工作", "三、2024年12月中央农村工作会议（12月17日—18日）——部署2025年\"三农\"工作", "四、2025年全国两会——政府工作报告与\"十四五\"收官部署", "五、2025年中央一号文件——深化农村改革（要点速览）", "六、抗战胜利80周年纪念大会（2025年9月3日，北京天安门广场）", "七、二十届四中全会（2025年10月20日—23日）——\"十五五\"规划建议", "八、习近平总书记重要论述与金句汇编"], "key_terms": ["二十届三中全会（2024.7）", "2024年12月中央经济工作会议", "2024年12月中央农村工作会议", "2025年全国两会（政府工作报告）", "2025年中央一号文件", "抗战胜利80周年纪念大会（2025.9）"], "table_count": 8}, {"title": "公文格式·行文规则·常用文种核心考点", "module": "公文写作", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源"], "key_terms": ["公文种类（15 种）", "上行文·下行文·平行文", "发文字号", "公文格式要素", "标题规范", "报告与请示的区别"], "table_count": 0}, {"title": "粮食安全·耕地保护·乡村振兴核心政策考点", "module": "三农与乡村振兴", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源"], "key_terms": ["国家粮食安全战略", "18亿亩耕地红线", "永久基本农田", "不发生规模性返贫", "乡村振兴总要求", "千万工程"], "table_count": 0}, {"title": "习近平新时代中国特色社会主义思想核心考点", "module": "中国特色社会主义理论", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源与验证"], "key_terms": ["「两个确立」", "「四个意识」「四个自信」「两个维护」", "「十个明确」", "「十四个坚持」", "「五位一体」总体布局", "「四个全面」战略布局"], "table_count": 0}, {"title": "建党·长征·抗战·建国重大事件与会议核心考点", "module": "中共党史", "key_points": ["📌 摘要", "🎯 核心考点", "📝 考情提示", "🔗 溯源"], "key_terms": ["中共一大（1921.7，上海→嘉兴南湖）", "南昌起义（1927.8.1）", "八七会议（1927.8，汉口）", "秋收起义与井冈山（1927.9-10）", "遵义会议（1935.1，贵州遵义）", "长征（1934.10-1936.10）"], "table_count": 0}]}};</script>
+<script>
+// ========================================
+// 赛博导师 · 学案 — 前端逻辑
+// ========================================
+
+const API_BASE = window.location.origin;  // 自动适配电脑/手机访问
+
+// === 静态数据降级（REQ-20260813-004 任务2：公网版/文件版 API 不可达时读内联数据）===
+// window.STATIC_DATA 由 scripts/build_static_site.py 构建时注入，结构与各 API 响应同构；
+// 本机版（API 正常）不注入该字段，行为与改造前完全一致。
+const STATIC_DATA = window.STATIC_DATA || null;
+let staticMode = false;   // true = 当前运行在静态降级模式（公网 GitHub Pages / file://）
+
+function staticFor(endpoint) {
+  if (!STATIC_DATA) return null;
+  if (endpoint.includes('/api/overview')) return STATIC_DATA.overview;
+  if (endpoint.includes('/api/knowledge/card')) {
+    const m = endpoint.match(/[?&]path=([^&]+)/);
+    const p = m ? decodeURIComponent(m[1]) : '';
+    return (STATIC_DATA.cards && STATIC_DATA.cards[p]) || null;
+  }
+  if (endpoint.includes('/api/quality')) return STATIC_DATA.quality;
+  if (endpoint.includes('/api/knowledge')) return STATIC_DATA.knowledge;
+  if (endpoint.includes('/api/summary')) return STATIC_DATA.summary;
+  if (endpoint.includes('/api/quiz')) return STATIC_DATA.quiz;
+  return null;
+}
+let overviewData = null;
+let currentTab = 'overview';
+let p5Instance = null;
+
+// 练题状态
+let quizQuestions = [];
+let quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: false };
+// BUG-2：练题闭环 — 会话内作答同步到服务端的计数（答错自动落库错题记录）
+let quizSyncStats = { ok: 0, fail: 0 };
+
+// === Tab 切换 ===
+document.getElementById('nav-bar').addEventListener('click', (e) => {
+  const tab = e.target.closest('.nav-tab');
+  if (!tab) return;
+  const tabId = tab.dataset.tab;
+  if (tabId === currentTab) return;
+  switchTab(tabId);
+});
+
+function switchTab(tabId) {
+  currentTab = tabId;
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+  renderTab(tabId);
+}
+
+// === 数据加载 ===
+async function fetchAPI(endpoint) {
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    staticMode = false;
+    return await res.json();
+  } catch (err) {
+    console.error(`API 错误: ${endpoint}`, err);
+    // REQ-20260813-004：API 不可达 → 自动降级读静态数据（公网/文件版）
+    const s = staticFor(endpoint);
+    if (s) { staticMode = true; return s; }
+    return null;
+  }
+}
+
+async function init() {
+  overviewData = await fetchAPI('/api/overview');
+  if (!overviewData) {
+    document.getElementById('main-content').innerHTML =
+      '<div class="error-msg">⚠️ 无法连接到学习服务器。请确认 server.py 已启动（python server.py）</div>';
+    document.getElementById('header-subtitle').textContent = '未连接';
+    return;
+  }
+  const d = overviewData;
+  document.getElementById('header-subtitle').textContent =
+    `备考中  ·  距考 ${d.days_remaining} 天${staticMode ? '  ·  📡 静态镜像模式' : ''}`;
+  document.getElementById('card-count-badge').textContent = d.knowledge_cards.total;
+  renderTab('overview');
+}
+
+// === 渲染各标签页 ===
+function renderTab(tabId) {
+  const container = document.getElementById('main-content');
+  if (!overviewData) {
+    container.innerHTML = '<div class="loading">加载中...</div>';
+    return;
+  }
+  switch (tabId) {
+    case 'overview': renderOverview(container); break;
+    case 'knowledge': renderKnowledge(container); break;
+    case 'plan': renderDailyPlan(container); break;
+    case 'quiz': renderQuiz(container); break;
+  }
+}
+
+// === 总览 ===
+function renderOverview(container) {
+  const d = overviewData;
+  const modules = d.mastery?.modules || {};
+  const moduleNames = Object.keys(modules);
+  const anyProgress = Object.values(modules).some(m => m.mastery > 0);
+
+  // 有进度的模块数
+  const modulesWithProgress = Object.values(modules).filter(m => m.mastery > 0).length;
+
+  // 进度条
+  const progressBars = moduleNames.map(name => {
+    const m = modules[name] || {mastery:0, correct_rate:0, weak:false};
+    const pct = m.mastery || 0;
+    const colorClass = pct >= 60 ? 'bar-high' : pct >= 30 ? 'bar-mid' : 'bar-low';
+    return `
+      <div class="module-bar-item">
+        <div class="module-bar-label">
+          <span>${name}</span>
+          <span class="module-bar-pct">${pct}%</span>
+        </div>
+        <div class="module-bar-track">
+          <div class="module-bar-fill ${colorClass}" style="width:${Math.max(pct, 2)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="overview-grid">
+      <div class="stat-card">
+        <div class="label">距考试</div>
+        <div class="value accent">${d.days_remaining} 天</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">已练模块</div>
+        <div class="value">${modulesWithProgress}/${moduleNames.length}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">知识卡</div>
+        <div class="value">${d.knowledge_cards.total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">题库总量</div>
+        <div class="value">${d.quiz_bank.total_questions}</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">📊 模块掌握度</div>
+      ${anyProgress ? '<span class="badge" style="font-size:11px;">有进度</span>' : '<span style="font-size:12px;color:var(--ink-faint);">尚未练题，进度全为 0%</span>'}
+    </div>
+    <div class="module-bars-grid">
+      ${progressBars}
+    </div>
+    ${anyProgress ? '<div id="mastery-canvas-wrap" style="margin-top:12px;min-height:200px;"></div>' : ''}
+  `;
+
+  if (anyProgress) {
+    // p5.min.js 首次访问需下载约1MB，可能未就绪；轮询等待（最多5秒）再初始化雷达图
+    let tries = 0;
+    const tryInit = () => {
+      if (typeof p5 !== 'undefined' || tries++ >= 50) initMasteryCanvas(d.mastery);
+      else setTimeout(tryInit, 100);
+    };
+    setTimeout(tryInit, 100);
+  }
+}
+
+// === 紧凑版 p5.js 水墨风雷达图（仅在有数据时显示）===
+function initMasteryCanvas(masteryData) {
+  const wrap = document.getElementById('mastery-canvas-wrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('canvas').forEach(c => c.remove());
+  wrap.querySelectorAll('div').forEach(d => d.remove());
+  if (p5Instance) { p5Instance.remove(); p5Instance = null; }
+
+  const modules = masteryData?.modules || {};
+  const moduleNames = Object.keys(modules);
+  if (moduleNames.length === 0) return;
+
+  const sketch = (p) => {
+    let hoveredIdx = -1;
+    const names = moduleNames.map(n => n.length > 6 ? n.slice(0, 5) + '…' : n);
+    const fullNames = moduleNames;
+    const values = moduleNames.map(n => modules[n]?.mastery || 0);
+    let tooltipEl = null;
+    const geo = () => ({ cx: p.width / 2, cy: p.height / 2, r: Math.min(p.width, p.height) * 0.40 });
+
+    p.setup = function() {
+      const w = wrap.clientWidth;
+      const h = 240;
+      const canvas = p.createCanvas(w, h);
+      canvas.parent(wrap);
+      // 注：BUG-1 修复 — HSB colorMode 的 alpha 上限必须与传入值同量纲。
+      // 原为 colorMode(HSB,360,100,100,100) 但所有 stroke/fill 传 0.2~0.9 的小数 alpha，
+      // 导致实际透明度≈0.2%/100% 几乎全透明；改为 alpha 上限 1，0.x 即 0~100% 透明度。
+      p.colorMode(p.HSB, 360, 100, 100, 1);
+      tooltipEl = document.createElement('div');
+      tooltipEl.style.cssText = `
+        position:absolute; pointer-events:none; z-index:99;
+        background:rgba(26,16,8,0.88); color:#f5f0e8; padding:6px 12px;
+        border-radius:4px; font-size:12px; font-family:'Noto Sans SC',sans-serif;
+        letter-spacing:1px; opacity:0; transition:opacity 0.15s; white-space:nowrap;
+      `;
+      wrap.style.position = 'relative';
+      wrap.appendChild(tooltipEl);
+    };
+
+    p.draw = function() {
+      p.clear();
+      const { cx, cy, r } = geo();
+
+      // 参考圈
+      for (let level = 1; level <= 3; level++) {
+        const lr = (r / 4) * level;
+        p.stroke(30, 8, 55, 0.2);
+        p.strokeWeight(0.5);
+        p.noFill();
+        p.ellipse(cx, cy, lr * 2, lr * 2);
+        p.fill(30, 5, 45, 0.4);
+        p.noStroke();
+        p.textAlign(p.CENTER);
+        p.textSize(9);
+        p.text(`${level * 33}%`, cx, cy - lr + 12);
+      }
+
+      // 轴线
+      for (let i = 0; i < names.length; i++) {
+        const angle = p.map(i, 0, names.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const x2 = cx + r * p.cos(angle);
+        const y2 = cy + r * p.sin(angle);
+        const isHovered = (i === hoveredIdx);
+        p.stroke(isHovered ? 0 : 26, isHovered ? 85 : 12, isHovered ? 55 : 50, isHovered ? 0.9 : 0.3);
+        p.strokeWeight(isHovered ? 2 : 0.6);
+        p.line(cx, cy, x2, y2);
+        const lx = cx + (r + 13) * p.cos(angle);
+        const ly = cy + (r + 13) * p.sin(angle);
+        p.fill(26, 15, 35, 0.7);
+        p.noStroke();
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(10);
+        p.text(names[i], lx, ly);
+      }
+
+      // 数据区
+      p.beginShape();
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const vr = r * (values[i] / 100);
+        p.curveVertex(cx + vr * p.cos(angle), cy + vr * p.sin(angle));
+      }
+      for (let i = 0; i < 3; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[0] / 100) * p.cos(angle), cy + r * (values[0] / 100) * p.sin(angle));
+      }
+      p.endShape(p.CLOSE);
+      p.fill(0, 85, 55, 0.22);
+      p.noStroke();
+      p.beginShape();
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[i] / 100) * p.cos(angle), cy + r * (values[i] / 100) * p.sin(angle));
+      }
+      for (let i = 0; i < 3; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        p.curveVertex(cx + r * (values[0] / 100) * p.cos(angle), cy + r * (values[0] / 100) * p.sin(angle));
+      }
+      p.endShape(p.CLOSE);
+
+      // 数据点
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const vr = r * (values[i] / 100);
+        p.fill(0, 85, 55, 0.6);
+        p.noStroke();
+        p.ellipse(cx + vr * p.cos(angle), cy + vr * p.sin(angle), 4, 4);
+      }
+    };
+
+    // === 交互：鼠标悬停显示模块名称与掌握度（消除"死区"感）===
+    p.mouseMoved = function() {
+      const { cx, cy, r } = geo();
+      let nearest = -1;
+      let bestDist = 1e9;
+      for (let i = 0; i < values.length; i++) {
+        const angle = p.map(i, 0, values.length, -p.HALF_PI, p.TWO_PI - p.HALF_PI);
+        const lx = cx + (r + 13) * p.cos(angle);
+        const ly = cy + (r + 13) * p.sin(angle);
+        const d = p.dist(p.mouseX, p.mouseY, lx, ly);
+        if (d < bestDist) { bestDist = d; nearest = i; }
+      }
+      hoveredIdx = (bestDist < 42) ? nearest : -1;
+      if (hoveredIdx >= 0) {
+        tooltipEl.textContent = `${fullNames[hoveredIdx]}：${values[hoveredIdx]}%`;
+        tooltipEl.style.left = (p.mouseX + 12) + 'px';
+        tooltipEl.style.top = (p.mouseY - 10) + 'px';
+        tooltipEl.style.opacity = '1';
+      } else {
+        tooltipEl.style.opacity = '0';
+      }
+    };
+
+    p.mouseOut = function() {
+      hoveredIdx = -1;
+      if (tooltipEl) tooltipEl.style.opacity = '0';
+    };
+  };
+
+  try {
+    if (typeof p5 !== 'undefined') {
+      p5.disableFriendlyErrors = true;
+      p5Instance = new p5(sketch);
+    }
+  } catch(e) {}
+}
+
+// === 知识宝库 ===
+async function renderKnowledge(container) {
+  // /api/overview 的 knowledge_cards 是 {total, modules} 统计对象；卡片数组从 /api/knowledge 获取
+  let cards = [];
+  try {
+    const kResp = await fetch(`${API_BASE}/api/knowledge`);
+    if (kResp.ok) {
+      const kData = await kResp.json();
+      if (Array.isArray(kData.cards)) cards = kData.cards;
+    }
+  } catch(e) {}
+  // 静态降级：API 不可达时读内联数据
+  if (cards.length === 0) {
+    const sk = staticFor('/api/knowledge');
+    if (sk && Array.isArray(sk.cards)) cards = sk.cards;
+  }
+  if (cards.length === 0 && Array.isArray(overviewData.knowledge_cards)) {
+    cards = overviewData.knowledge_cards;
+  }
+  let qualityMap = {};
+
+  // 获取质量评分
+  try {
+    const qResp = await fetch(`${API_BASE}/api/quality`);
+    if (qResp.ok) {
+      const qData = await qResp.json();
+      qData.cards.forEach(c => { qualityMap[c.path] = c; });
+    }
+  } catch(e) {}
+  // 静态降级：质量评分
+  if (Object.keys(qualityMap).length === 0) {
+    const sq = staticFor('/api/quality');
+    if (sq && Array.isArray(sq.cards)) sq.cards.forEach(c => { qualityMap[c.path] = c; });
+  }
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">📜 知识宝库</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${Object.keys(qualityMap).length > 0 ? `<span style="font-size:12px;color:var(--ink-faint);">均分: ${(Object.values(qualityMap).reduce((a,c)=>a+c.score,0)/Math.max(Object.values(qualityMap).length,1)).toFixed(0)}</span>` : ''}
+        <input class="search-box" id="knowledge-search" placeholder="搜索知识卡..." />
+        <button style="padding:6px 12px;border:1px solid var(--border);border-radius:16px;font-size:11px;cursor:pointer;background:rgba(255,255,255,0.5);color:var(--ink-light);font-family:var(--serif);" onclick="renderKnowledgeSummary()">📋 考点汇总</button>
+      </div>
+    </div>
+    <div class="card-list" id="card-list"></div>
+    <div class="detail-panel" id="detail-panel"></div>
+  `;
+
+  renderCardList(cards, qualityMap);
+
+  document.getElementById('knowledge-search').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = q ? cards.filter(c =>
+      c.title.toLowerCase().includes(q) || c.module.toLowerCase().includes(q)
+    ) : cards;
+    renderCardList(filtered, qualityMap);
+  });
+}
+
+const moduleIcons = {
+  '时政热点': '📰', '中国特色社会主义理论': '🏛️', '马克思主义哲学': '📖',
+  '毛泽东思想': '⭐', '中共党史': '🚩', '三农与乡村振兴': '🌾',
+  '法律': '⚖️', '经济常识': '💰', '地理科技': '🌍',
+  '历史人文': '🏺', '公文写作': '✍️', '河南省情': '🏠'
+};
+
+function cardItemHtml(c, qualityMap, isNewest) {
+  const q = qualityMap[c.path];
+  const scoreHtml = q ? `<span style="font-size:11px;padding:1px 6px;border-radius:8px;margin-left:6px;
+    ${q.score >= 80 ? 'background:rgba(192,57,43,0.12);color:var(--vermillion);' :
+      q.score >= 55 ? 'background:rgba(212,160,23,0.12);color:var(--ochre);' :
+      'background:rgba(140,123,107,0.1);color:var(--ink-faint);'}
+    font-weight:700;">${q.score}分</span>` : '';
+  const warns = q && q.score < 70 ? q.details.filter(d => d.includes('缺少')).slice(0,2).map(d => `<span style="font-size:10px;color:var(--ink-faint);margin-left:4px;">${d.replace('缺少','缺')}</span>`).join('') : '';
+  const newBadge = isNewest ? '<span class="kb-badge-new">🆕 最新</span>' : '';
+  return `
+    <div class="card-item" data-path="${c.path}">
+      <div class="card-icon">${moduleIcons[c.module] || '📄'}</div>
+      <div class="card-info">
+        <div class="card-title">${c.title}${newBadge}${scoreHtml}</div>
+        <div class="card-preview">${c.preview || ''}</div>
+        <div class="card-module">${c.module} · ${(c.size / 1024).toFixed(1)} KB · 📅 ${c.update_time || '未知'} 更新${c.keywords ? ' · ' + c.keywords : ''}${warns}</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </div>
+  `;
+}
+
+// REQ-20260813-003：知识宝库排序——最新优先 + 历史折叠（搜索时全部平铺，折叠组内可搜到）
+function renderCardList(cards, qualityMap) {
+  const list = document.getElementById('card-list');
+  if (!list) return;
+  if (cards.length === 0) {
+    list.innerHTML = '<div class="empty-state">📭 暂无知识卡</div>';
+    return;
+  }
+  const sorted = [...cards].sort((a, b) => (b.update_time || '').localeCompare(a.update_time || ''));
+  // 搜索模式：有输入时全部平铺展示过滤结果，保证命中历史折叠组内卡片也可见
+  const searchBox = document.getElementById('knowledge-search');
+  const isSearch = !!(searchBox && searchBox.value.trim());
+
+  let html = '';
+  if (isSearch) {
+    html = sorted.map(c => cardItemHtml(c, qualityMap, false)).join('');
+  } else {
+    // 按日期分组（YYYY-MM-DD），最新日期在前
+    const groups = {};
+    sorted.forEach(c => {
+      const d = (c.update_time || '').slice(0, 10) || '未知日期';
+      (groups[d] = groups[d] || []).push(c);
+    });
+    const dates = Object.keys(groups).sort().reverse();
+    const newestDate = dates[0];
+    // 顶部：最近更新区（最新日期的卡平铺 + 🆕 最新徽标）
+    html += `<div class="kb-date-label">🆕 最近更新 · ${newestDate}</div>`;
+    html += groups[newestDate].map(c => cardItemHtml(c, qualityMap, true)).join('');
+    // 下方：历史资料折叠组（较早日期的卡收纳）
+    const olderDates = dates.slice(1);
+    if (olderDates.length > 0) {
+      const olderCards = olderDates.flatMap(d => groups[d]);
+      html += `
+        <div class="kb-history" id="kb-history">
+          <div class="kb-history-head" onclick="toggleHistory(this)">
+            <span>📜 历史资料（${olderCards.length}）</span>
+            <span class="kb-history-arrow">▾</span>
+          </div>
+          <div class="kb-history-body" style="display:none;">
+            ${olderCards.map(c => cardItemHtml(c, qualityMap, false)).join('')}
+          </div>
+        </div>
+      `;
+    }
+  }
+  list.innerHTML = html;
+
+  list.querySelectorAll('.card-item').forEach(item => {
+    item.addEventListener('click', () => loadKnowledgeCard(item.dataset.path));
+  });
+}
+
+function toggleHistory(head) {
+  const wrap = head.closest('.kb-history');
+  if (!wrap) return;
+  const body = wrap.querySelector('.kb-history-body');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  wrap.classList.toggle('open', !open);
+}
+
+async function loadKnowledgeCard(path) {
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = '<div class="loading">加载中...</div>';
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior: 'smooth' });
+
+  const card = await fetchAPI(`/api/knowledge/card?path=${encodeURIComponent(path)}`);
+  if (!card) {
+    panel.innerHTML = '<div class="error-msg">加载失败</div>';
+    return;
+  }
+
+  panel.innerHTML = `
+    <button class="back-btn" onclick="closeDetail()">← 返回列表</button>
+    <div class="detail-meta">📂 ${card.module || '未分类'} · ${(card.content?.length || 0)} 字</div>
+    <div class="rendered-content">${marked.parse(card.content || '')}</div>
+  `;
+}
+
+function closeDetail() {
+  const panel = document.getElementById('detail-panel');
+  if (panel) panel.classList.remove('visible');
+}
+
+// === 每日计划 ===
+function renderDailyPlan(container) {
+  const plans = overviewData.daily_plans || [];
+  // BUG-4 修复：东八区（Asia/Shanghai, UTC+8）当天日期。
+  // 原实现 new Date().toISOString() 为 UTC 日期，清晨 0-8 点（UTC 仍为前一日）会高亮错日子。
+  const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">📅 每日计划</div>
+    </div>
+    <div class="plan-timeline" id="plan-timeline"></div>
+    <div class="detail-panel" id="plan-detail"></div>
+  `;
+
+  const timeline = document.getElementById('plan-timeline');
+  if (plans.length === 0) {
+    timeline.innerHTML = '<div class="empty-state">📭 暂无学习计划</div>';
+    return;
+  }
+
+  timeline.innerHTML = plans.map(p => {
+    const isToday = p.date === today;
+    return `
+      <div class="plan-day${isToday ? ' today' : ''}" data-date="${p.date}">
+        <div class="plan-date">${p.date} ${isToday ? '【今天】' : ''}</div>
+        <div class="plan-title">${p.title || '查看详情 →'}</div>
+      </div>
+    `;
+  }).join('');
+
+  timeline.querySelectorAll('.plan-day').forEach(day => {
+    day.addEventListener('click', async () => {
+      const date = day.dataset.date;
+      const detail = document.getElementById('plan-detail');
+      detail.innerHTML = '<div class="loading">加载中...</div>';
+      detail.classList.add('visible');
+      detail.scrollIntoView({ behavior: 'smooth' });
+
+      const resp = await fetchAPI(`/api/daily-plan?date=${date}`);
+      const plan = resp?.[0];
+      if (!plan) {
+        detail.innerHTML = '<div class="error-msg">加载失败</div>';
+        return;
+      }
+      detail.innerHTML = `
+        <button class="back-btn" onclick="document.getElementById('plan-detail').classList.remove('visible')">← 返回</button>
+        <div class="detail-meta">📅 ${plan.date}</div>
+        <div class="rendered-content">${marked.parse(plan.content || '')}</div>
+      `;
+    });
+  });
+}
+
+// === 练题工坊（完整交互） ===
+async function renderQuiz(container) {
+  const quiz = overviewData.quiz_bank || overviewData.quiz_summary || {};
+  const quizTotal = quiz.total_questions ?? quiz.total ?? 0;
+
+  // 加载题目
+  if (quizQuestions.length === 0 && quizTotal > 0) {
+    container.innerHTML = '<div class="loading">加载题库中...</div>';
+    try {
+      const resp = await fetch(`${API_BASE}/api/quiz/questions`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data)) quizQuestions = data;
+        else if (data && Array.isArray(data.questions)) quizQuestions = data.questions;
+      }
+    } catch(e) { console.error('加载题库失败:', e); }
+    // 静态降级：API 不可达时读内联题库
+    if (quizQuestions.length === 0) {
+      const sq = staticFor('/api/quiz');
+      if (sq && Array.isArray(sq.questions)) quizQuestions = sq.questions;
+    }
+  }
+
+  // 练题中 → 显示当前题目
+  if (quizState.active && quizQuestions.length > 0) {
+    renderQuizSession(container);
+    return;
+  }
+
+  // 结果页 → 显示成绩
+  if (!quizState.active && Object.keys(quizState.answers).length > 0) {
+    renderQuizResult(container);
+    return;
+  }
+
+  // 首页
+  const modules = [...new Set(quizQuestions.map(q => q.module))];
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">⚔️ 练题工坊</div>
+    </div>
+    <div class="quiz-start-screen">
+      <span class="quiz-icon">📝</span>
+      <h3>${quizQuestions.length > 0 ? `共 ${quizQuestions.length} 题待练` : '暂无题目'}</h3>
+      <p>${quizQuestions.length > 0 ? '选择模块开始练题，作答后即时查看解析' : '开始学习后，练题数据将在此呈现'}</p>
+      ${quizQuestions.length > 0 ? `
+        <div class="quiz-filters" id="quiz-filters">
+          <span class="quiz-filter-tag active" data-module="all">全部</span>
+          ${modules.map(m => `<span class="quiz-filter-tag" data-module="${m}">${m}</span>`).join('')}
+        </div>
+        <button class="quiz-btn" id="quiz-start-btn" onclick="startQuiz()">开始练题</button>
+      ` : ''}
+    </div>
+  `;
+
+  if (quizQuestions.length > 0) {
+    let selModule = 'all';
+    document.getElementById('quiz-filters').addEventListener('click', (e) => {
+      const tag = e.target.closest('.quiz-filter-tag');
+      if (!tag) return;
+      document.querySelectorAll('.quiz-filter-tag').forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      selModule = tag.dataset.module;
+    });
+    window._quizModule = () => selModule;
+  }
+}
+
+// 解析渲染：优先使用五字段强类型（迁移后），无则回退原始 explanation
+function formatExplanation(q) {
+  const parts = [];
+  if (q.correct_answer) parts.push(q.correct_answer);
+  if (q.term_breakdown) parts.push(q.term_breakdown);
+  if (q.option_analysis) parts.push(q.option_analysis);
+  if (q.exam_hint) parts.push(q.exam_hint);
+  if (q.mnemonic) parts.push(q.mnemonic);
+  if (parts.length) return `<strong>解析：</strong>${parts.join('\n\n')}`;
+  return `<strong>解析：</strong>${q.explanation || ''}`;
+}
+
+function startQuiz() {
+  const selModule = (window._quizModule && window._quizModule()) || 'all';
+  quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: true };
+  quizSyncStats = { ok: 0, fail: 0 };
+  // 筛选题目
+  if (selModule === 'all') {
+    quizState.filtered = [...quizQuestions];
+  } else {
+    quizState.filtered = quizQuestions.filter(q => q.module === selModule);
+  }
+  if (quizState.filtered.length === 0) {
+    alert('该模块暂无题目');
+    return;
+  }
+  renderTab('quiz');
+}
+
+function renderQuizSession(container) {
+  const qs = quizState;
+  const questions = qs.filtered;
+  const q = questions[qs.currentIdx];
+  const total = questions.length;
+  const idx = qs.currentIdx;
+
+  container.innerHTML = `
+    <div class="quiz-session">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" style="width:${((idx + 1) / total) * 100}%"></div>
+      </div>
+      <div class="quiz-question-header">
+        <span class="quiz-q-num">第 ${idx + 1}/${total} 题 · ${q.type}</span>
+        <span class="quiz-q-module">${q.module}</span>
+      </div>
+      <div class="quiz-stem">${q.stem}</div>
+      <div class="quiz-options" id="quiz-options">
+        ${Object.entries(q.options).map(([k, v]) => {
+          const isSelected = qs.answers[idx] === k;
+          const isRevealed = qs.revealed[idx];
+          const isCorrect = k === q.answer;
+          let cls = 'quiz-option';
+          if (isRevealed) { cls += ' disabled'; if (isCorrect) cls += ' correct'; else if (isSelected && !isCorrect) cls += ' wrong'; }
+          else if (isSelected) cls += ' selected';
+          return `<div class="${cls}" data-answer="${k}" ${isRevealed ? '' : `onclick="selectAnswer(${idx}, '${k}')"`}>
+            <span class="quiz-option-letter">${k}</span>
+            <span>${v}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="quiz-explanation ${qs.revealed[idx] ? 'visible' : ''}" id="quiz-explanation">
+        ${qs.revealed[idx] ? formatExplanation(q) : ''}
+      </div>
+      <div class="quiz-nav">
+        <button class="quiz-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="prevQuestion()">← 上一题</button>
+        ${idx < total - 1
+          ? `<button class="quiz-nav-btn" onclick="nextQuestion()">下一题 →</button>`
+          : `<button class="quiz-btn" onclick="finishQuiz()">完成练题</button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function selectAnswer(idx, answer) {
+  if (quizState.revealed[idx]) return;
+  quizState.answers[idx] = answer;
+  quizState.revealed[idx] = true;
+  const q = quizState.filtered[idx];
+  if (answer === q.answer) quizState.score++;
+  submitAnswerToServer(q, answer);  // BUG-2：作答同步服务端（异步 fire-and-forget，不阻塞练题流程）
+  renderTab('quiz');
+}
+
+// BUG-2 修复：练题前端接入服务端闭环 — 每答一题 POST /api/quiz/submit，
+// 答错自动在服务端 data/wrong-questions/ 落库、wrong 列表与 mastery 联动更新；
+// 答对计入 answer-records / stats。失败仅降级为本地判分，不影响交互与考试倒计时。
+async function submitAnswerToServer(q, userAnswer) {
+  try {
+    const resp = await fetch(`${API_BASE}/api/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question_id: (q.question_id || q._id || '').toString(),
+        user_answer: userAnswer,
+        module: q.module || ''
+      })
+    });
+    if (!resp.ok) { quizSyncStats.fail++; return; }
+    const d = await resp.json();
+    if (d && typeof d.is_correct === 'boolean') quizSyncStats.ok++;
+    else quizSyncStats.fail++;
+  } catch (e) {
+    quizSyncStats.fail++;
+    console.warn('[quiz] 学习记录同步失败（本地判分不受影响）:', e);
+  }
+}
+
+function nextQuestion() {
+  if (quizState.currentIdx < quizState.filtered.length - 1) {
+    quizState.currentIdx++;
+    renderTab('quiz');
+  }
+}
+
+function prevQuestion() {
+  if (quizState.currentIdx > 0) {
+    quizState.currentIdx--;
+    renderTab('quiz');
+  }
+}
+
+function finishQuiz() {
+  quizState.active = false;
+  renderTab('quiz');
+}
+
+function renderQuizResult(container) {
+  const qs = quizState;
+  const total = qs.filtered.length;
+  const score = qs.score;
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+  const wrongList = qs.filtered.filter((q, i) => qs.answers[i] !== q.answer);
+
+  container.innerHTML = `
+    <div class="quiz-result">
+      <div class="score-circle">${pct}%</div>
+      <h3 style="font-family:var(--serif);font-size:20px;letter-spacing:2px;">${pct >= 80 ? '🎉 优秀！' : pct >= 60 ? '👍 不错' : '💪 继续加油'}</h3>
+      <div class="score-detail">${score}/${total} 正确</div>
+      ${quizSyncStats.ok + quizSyncStats.fail > 0 ? `
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:6px;letter-spacing:0.5px;">
+          📡 学习记录已同步服务端 ${quizSyncStats.ok} 条${quizSyncStats.fail > 0 ? `（${quizSyncStats.fail} 条同步失败，本地判分不受影响）` : ''}
+        </div>` : ''}
+      ${wrongList.length > 0 ? `
+        <div class="wrong-list">
+          <div class="section-title" style="font-size:16px;margin-bottom:10px;">📋 错题回顾（${wrongList.length} 题）</div>
+          ${wrongList.map((q, i) => `
+            <div class="wrong-item" onclick="reviewWrong(${qs.filtered.indexOf(q)})">
+              <strong>${i + 1}.</strong> ${q.stem.slice(0, 60)}...
+              <br><span style="color:var(--vermillion);font-size:12px;">你的答案: ${qs.answers[qs.filtered.indexOf(q)] || '未答'} → 正确答案: ${q.answer}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<p style="color:var(--jade);margin-top:10px;">✨ 全部正确！</p>'}
+      <button class="quiz-btn" style="margin-top:20px;" onclick="resetQuiz()">再来一轮</button>
+      <button class="quiz-nav-btn" style="margin-left:10px;" onclick="quizState.answers={};quizState.revealed={};quizState.score=0;quizState.active=false;renderTab('quiz');">返回题库</button>
+    </div>
+  `;
+}
+
+function reviewWrong(idx) {
+  quizState.currentIdx = idx;
+  quizState.active = true;
+  renderTab('quiz');
+}
+
+function resetQuiz() {
+  quizState = { currentIdx: 0, answers: {}, revealed: {}, score: 0, active: true, filtered: quizState.filtered };
+  renderTab('quiz');
+}
+
+// === 考点汇总 ===
+async function renderKnowledgeSummary() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = '<div class="loading">生成考点汇总中...</div>';
+  // 静态降级：fetchAPI 内含 API 失败 → 内联数据回退逻辑
+  const data = await fetchAPI('/api/summary');
+  if (!data) {
+    container.innerHTML = '<div class="error-msg">加载失败</div>';
+    return;
+  }
+  container.innerHTML = `
+      <div class="section-header">
+        <div class="section-title">📋 考点汇总</div>
+        <button class="back-btn" onclick="switchTab('knowledge')">← 返回宝库</button>
+      </div>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--ink-faint);">
+        覆盖 ${data.modules_covered.length} 个模块 · 共 ${data.total_key_points} 个考点
+      </div>
+      ${data.cards.map(c => `
+        <div class="stat-card" style="margin-bottom:10px;">
+          <div style="font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:8px;color:var(--ink);">${c.title}</div>
+          ${c.key_points.length > 0 ? `
+            <div style="margin-bottom:6px;">
+              ${c.key_points.map((kp,i) => `<span style="display:inline-block;padding:3px 10px;margin:2px 4px;background:rgba(192,57,43,0.06);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--ink-light);">${i+1}. ${kp.slice(0,30)}${kp.length>30?'…':''}</span>`).join('')}
+            </div>
+          ` : ''}
+          ${c.key_terms.length > 0 ? `<div style="font-size:12px;color:var(--ink-faint);">关键词: ${c.key_terms.slice(0,4).join(' · ')}</div>` : ''}
+          <div style="font-size:11px;color:var(--ink-faint);margin-top:4px;">${c.table_count} 个表格 · ${c.key_points.length} 个考点</div>
+        </div>
+      `).join('')}
+    `;
+}
+
+// === PWA：Service Worker 注册（REQ-20260813-004 任务3，相对路径适配 /-/ 与 localhost）===
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(e => console.warn('Service Worker 注册失败:', e));
+  });
+}
+
+// === 启动 ===
+init();
+</script>
+</body>
+</html>
